@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Lafayette · Inventario</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:#f4f1eb; --bg2:#ffffff; --bg3:#ece9e1; --border:#dedad0;
+  --text:#1c1a15; --text2:#6b6659; --text3:#aaa496;
+  --accent:#1c1a15; --yellow:#f7c948; --yellow2:#e5b52a;
+  --red:#e8453c; --green:#27ae60; --blue:#2980b9; --orange:#e67e22;
+  --font:'Nunito',sans-serif; --mono:'DM Mono',monospace;
+  --r:14px; --rs:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:100vh;}
+
+/* ── MODE SCREEN ── */
+#modeScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:20px;background:var(--accent);}
+.mode-logo{font-size:32px;font-weight:900;letter-spacing:6px;text-transform:uppercase;color:var(--yellow);margin-bottom:4px;}
+.mode-tagline{font-size:15px;color:rgba(255,255,255,0.5);font-weight:600;margin-bottom:24px;letter-spacing:1px;}
+.mode-cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;width:100%;max-width:640px;}
+.mode-card{flex:1;min-width:220px;max-width:300px;border-radius:20px;padding:32px 24px;cursor:pointer;transition:all 0.2s;text-align:center;border:3px solid transparent;}
+.mode-card:hover{transform:translateY(-4px);}
+.mode-card .mc-icon{font-size:52px;display:block;margin-bottom:16px;}
+.mode-card .mc-name{font-size:22px;font-weight:900;margin-bottom:8px;}
+.mode-card .mc-desc{font-size:13px;font-weight:600;line-height:1.5;opacity:0.75;}
+.mode-card.enc{background:var(--yellow);color:var(--accent);}
+.mode-card.enc:hover{background:#ffe066;}
+.mode-card.due{background:rgba(255,255,255,0.1);color:white;border-color:rgba(255,255,255,0.2);}
+.mode-card.due:hover{background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.4);}
+
+/* ── SHEET BANNER ── */
+#sheetBanner{display:none;background:#e8f5e9;border-bottom:2px solid #a5d6a7;padding:10px 20px;font-size:13px;font-weight:700;color:#2e7d32;align-items:center;gap:10px;}
+#sheetBanner.err{background:#fdecea;border-color:#f5c6cb;color:#c0392b;}
+#sheetBanner .sb-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+/* ── HEADER ── */
+.app-header{background:var(--bg2);border-bottom:2px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.app-logo{font-size:18px;font-weight:900;letter-spacing:2px;text-transform:uppercase;}
+.app-logo span{color:var(--text3);}
+.hbtns{display:flex;gap:8px;align-items:center;}
+.hbtn{font-family:var(--font);font-size:12px;font-weight:800;padding:7px 14px;border-radius:8px;border:2px solid var(--border);background:var(--bg3);cursor:pointer;color:var(--text2);transition:all .15s;white-space:nowrap;}
+.hbtn:hover{border-color:var(--text2);color:var(--text);}
+.hbtn.yellow{background:var(--yellow);border-color:var(--yellow2);color:var(--accent);}
+.hbtn.yellow:hover{background:var(--yellow2);}
+
+/* ── NAV ── */
+.app-nav{display:flex;background:var(--bg2);border-bottom:2px solid var(--border);padding:0 16px;overflow-x:auto;gap:2px;}
+.nav-tab{font-family:var(--font);font-size:14px;font-weight:800;padding:14px 16px;cursor:pointer;color:var(--text3);border-bottom:3px solid transparent;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap;transition:all .15s;}
+.nav-tab:hover{color:var(--text2);}
+.nav-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+
+/* ── CONTENT ── */
+.content{padding:22px;max-width:980px;margin:0 auto;}
+.page{display:none;}.page.active{display:block;}
+
+/* ── SECTION HEAD ── */
+.sh{margin-bottom:20px;}
+.sh-title{font-size:28px;font-weight:900;}
+.sh-sub{font-size:14px;color:var(--text2);font-weight:600;margin-top:3px;}
+
+/* ── STAT GRID ── */
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px;}
+.sbox{background:var(--bg2);border:2px solid var(--border);border-radius:var(--r);padding:18px;}
+.sbox .sl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:5px;}
+.sbox .sv{font-size:30px;font-weight:900;line-height:1;}
+.sbox .sm{font-size:12px;color:var(--text2);font-weight:600;margin-top:3px;}
+.sbox.hl{background:var(--accent);border-color:var(--accent);color:white;}
+.sbox.hl .sl,.sbox.hl .sm{color:rgba(255,255,255,.55);}
+.sbox.warn{border-color:var(--orange);}.sbox.warn .sv{color:var(--orange);}
+.sbox.danger{border-color:var(--red);}.sbox.danger .sv{color:var(--red);}
+.sbox.good .sv{color:var(--green);}
+.sbox.yellow{border-color:var(--yellow2);}.sbox.yellow .sv{color:var(--yellow2);}
+
+/* ── CARD ── */
+.card{background:var(--bg2);border:2px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px;}
+.card-h{padding:14px 18px;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-t{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);}
+.card-b{padding:18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:660px){.g2{grid-template-columns:1fr;}}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);background:var(--bg);white-space:nowrap;}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text2);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--bg);}
+.tbl .tn{font-size:14px;font-weight:800;color:var(--text);}
+
+/* ── BADGES ── */
+.badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:100px;}
+.b-ok{background:#e8f5ee;color:var(--green);}
+.b-warn{background:#fff4e0;color:var(--orange);}
+.b-danger{background:#fdecea;color:var(--red);}
+.b-na{background:var(--bg3);color:var(--text3);}
+.b-blue{background:#e8f4fd;color:var(--blue);}
+.b-yellow{background:#fffbe6;color:#b7860b;}
+
+/* ── ALERT ITEMS ── */
+.al-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--rs);margin-bottom:8px;border:2px solid;}
+.al-item.danger{background:#fdecea;border-color:#f5c6cb;}
+.al-item.warn{background:#fff4e0;border-color:#fde9b0;}
+.al-item.merma{background:#fdf0ff;border-color:#e0b8f7;}
+.al-icon{font-size:22px;flex-shrink:0;}
+.al-name{font-size:15px;font-weight:800;}
+.al-sub{font-size:12px;color:var(--text2);font-weight:600;margin-top:2px;}
+
+/* ── CHART ── */
+.cw{position:relative;height:230px;}
+
+/* ── ENCARGADO CARDS ── */
+.ins-cards{display:flex;flex-direction:column;gap:8px;}
+.ic{background:var(--bg2);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:14px;transition:border-color .15s,box-shadow .15s;}
+.ic.done{border-color:var(--green);background:#f0fff6;}
+.ic:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px rgba(28,26,21,.06);}
+.ic-name{flex:1;font-size:19px;font-weight:800;line-height:1.1;}
+.ic-unit{font-size:12px;font-weight:700;color:var(--text3);min-width:28px;}
+.ic-num{display:flex;align-items:center;background:var(--bg3);border-radius:var(--rs);overflow:hidden;border:2px solid var(--border);}
+.ic:focus-within .ic-num{border-color:var(--accent);}
+.nbtn{width:46px;height:46px;font-size:22px;font-weight:900;background:none;border:none;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:background .1s;font-family:var(--font);}
+.nbtn:hover{background:var(--border);color:var(--text);}
+.nbtn:active{background:var(--accent);color:white;}
+.ninput{width:82px;height:46px;text-align:center;font-family:var(--font);font-size:21px;font-weight:900;background:none;border:none;color:var(--text);outline:none;}
+.ninput::placeholder{color:var(--text3);}
+.ic-chk{font-size:22px;width:28px;text-align:center;opacity:0;transition:opacity .2s;}
+.ic.done .ic-chk{opacity:1;}
+
+/* ── PROGRESS ── */
+.prog-wrap{background:var(--bg2);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;}
+.prog-track{flex:1;height:10px;background:var(--bg3);border-radius:5px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--green);border-radius:5px;transition:width .3s;}
+.prog-lbl{font-size:15px;font-weight:800;color:var(--text2);min-width:52px;text-align:right;}
+
+/* ── FORM ── */
+.frow{margin-bottom:16px;}
+.flbl{display:block;font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.fctrl{width:100%;padding:14px 16px;font-family:var(--font);font-size:17px;font-weight:700;background:var(--bg3);border:2px solid var(--border);border-radius:var(--rs);color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none;}
+.fctrl:focus{border-color:var(--accent);background:white;}
+
+/* ── BIG BUTTON ── */
+.bigbtn{width:100%;padding:18px;font-family:var(--font);font-size:18px;font-weight:900;background:var(--accent);color:var(--yellow);border:none;border-radius:var(--r);cursor:pointer;margin-top:18px;letter-spacing:1px;transition:all .15s;box-shadow:0 4px 20px rgba(28,26,21,.22);}
+.bigbtn:hover{background:#333;transform:translateY(-1px);box-shadow:0 6px 28px rgba(28,26,21,.32);}
+.bigbtn:active{transform:translateY(0);}
+.bigbtn.secondary{background:var(--bg3);color:var(--text2);border:2px solid var(--border);box-shadow:none;margin-top:10px;}
+.bigbtn.secondary:hover{background:var(--border);color:var(--text);}
+
+/* ── ENTRADA ITEMS ── */
+.ent-list{display:flex;flex-direction:column;gap:8px;}
+.ent-item{background:var(--bg2);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px;}
+.ei-icon{font-size:26px;}
+.ei-info{flex:1;}
+.ei-name{font-size:17px;font-weight:800;}
+.ei-meta{font-size:12px;color:var(--text2);font-weight:600;margin-top:2px;}
+.ei-qty{font-size:18px;font-weight:900;color:var(--green);white-space:nowrap;}
+.ei-del{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3);padding:4px 8px;border-radius:6px;transition:all .15s;}
+.ei-del:hover{background:#fdecea;color:var(--red);}
+
+/* ── DATE BTN ── */
+.datebtn{display:flex;align-items:center;gap:12px;background:var(--bg2);border:2px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;cursor:pointer;}
+.datebtn:focus-within{border-color:var(--accent);}
+.db-icon{font-size:22px;}
+.db-lbl{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;}
+.db-val{font-size:19px;font-weight:900;}
+.db-input{position:absolute;opacity:0;width:0;height:0;}
+
+/* ── CONFIG ── */
+.cfg-list{display:flex;flex-direction:column;gap:8px;}
+.cfg-row{display:flex;align-items:center;gap:12px;background:var(--bg2);border:2px solid var(--border);border-radius:var(--rs);padding:12px 16px;}
+.cfg-name{flex:1;font-size:15px;font-weight:800;}
+.cfg-unit{font-size:11px;font-weight:700;color:var(--text3);min-width:26px;}
+.cfg-input{width:96px;padding:7px 10px;font-family:var(--font);font-size:14px;font-weight:700;background:var(--bg3);border:2px solid var(--border);border-radius:6px;text-align:right;color:var(--text);outline:none;}
+.cfg-input:focus{border-color:var(--accent);background:white;}
+
+/* ── PERIOD PILLS ── */
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.pill{font-family:var(--font);font-size:12px;font-weight:800;padding:7px 14px;border-radius:100px;border:2px solid var(--border);background:var(--bg3);cursor:pointer;color:var(--text2);transition:all .15s;}
+.pill.active{background:var(--accent);color:var(--yellow);border-color:var(--accent);}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(14px);background:var(--accent);color:var(--yellow);font-size:15px;font-weight:800;padding:13px 26px;border-radius:100px;opacity:0;pointer-events:none;transition:all .3s;z-index:9999;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.22);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── SYNC INDICATOR ── */
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);display:inline-block;margin-right:6px;}
+.sync-dot.ok{background:var(--green);animation:pulse 2s infinite;}
+.sync-dot.syncing{background:var(--orange);animation:spin 1s linear infinite;}
+.sync-dot.err{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+/* ── SAL TABLE INPUT ── */
+.sal-input{width:100%;padding:10px 6px;font-family:var(--font);font-size:16px;font-weight:800;text-align:center;background:var(--bg3);border:2px solid var(--border);border-radius:6px;color:var(--text);outline:none;transition:border-color .15s;}
+.sal-input:focus{border-color:var(--accent);background:white;}
+.sal-input.filled{background:#fff8e6;border-color:var(--yellow2);}
+.sal-row:nth-child(even) td{background:var(--bg);}
+.sal-row td{padding:6px 8px;border-bottom:1px solid var(--border);}
+.rot-bar{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-top:4px;}
+.rot-fill{height:100%;border-radius:4px;}
+
+/* ── PIN OVERLAY ── */
+#pinOverlay{position:fixed;inset:0;background:rgba(28,26,21,.92);display:none;align-items:center;justify-content:center;z-index:9000;backdrop-filter:blur(4px);}
+#pinOverlay.show{display:flex;}
+.pin-box{background:var(--bg2);border-radius:24px;padding:36px 32px;text-align:center;width:320px;box-shadow:0 24px 80px rgba(0,0,0,.4);}
+.pin-title{font-size:22px;font-weight:900;margin-bottom:4px;}
+.pin-sub{font-size:13px;color:var(--text2);font-weight:600;margin-bottom:24px;}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:24px;}
+.pin-dot{width:16px;height:16px;border-radius:50%;background:var(--border);transition:background .15s;}
+.pin-dot.filled{background:var(--accent);}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.pin-btn{font-family:var(--font);font-size:24px;font-weight:900;background:var(--bg3);border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .12s;color:var(--text);}
+.pin-btn:hover{background:var(--border);}
+.pin-btn:active{background:var(--accent);color:var(--yellow);transform:scale(.95);}
+.pin-btn.del{font-size:18px;color:var(--text2);}
+.pin-btn.zero{grid-column:2;}
+.pin-err{font-size:13px;font-weight:800;color:var(--red);height:18px;margin-top:4px;}
+.pin-cancel{font-size:12px;font-weight:700;color:var(--text3);margin-top:14px;cursor:pointer;text-decoration:underline;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@media(max-width:580px){.content{padding:14px;}.ic-name{font-size:16px;}.sg{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<!-- MODE SCREEN -->
+<div id="modeScreen">
+  <div class="mode-logo">Lafayette</div>
+  <div class="mode-tagline">SISTEMA DE INVENTARIO</div>
+  <div class="mode-cards">
+    <div class="mode-card enc" onclick="enterMode('enc')">
+      <span class="mc-icon">📋</span>
+      <div class="mc-name">Soy el Encargado</div>
+      <div class="mc-desc">Capturar inventario del día y registrar mercancía que llegó</div>
+    </div>
+    <div class="mode-card due" onclick="enterMode('due')">
+      <span class="mc-icon">📊</span>
+      <div class="mc-name">Soy el Dueño</div>
+      <div class="mc-desc">Ver reportes, costos, merma y configurar el sistema</div>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET BANNER -->
+<div id="sheetBanner">
+  <div class="sb-dot"></div>
+  <span id="sheetBannerText">Conectado a Google Sheets</span>
+</div>
+
+<!-- ══════════════ ENCARGADO ══════════════ -->
+<div id="encApp" style="display:none;">
+  <div class="app-header">
+    <div class="app-logo">Lafayette <span>·</span> Encargado</div>
+    <div class="hbtns">
+      <span class="sync-dot" id="encSyncDot"></span>
+      <span id="encSyncLabel" style="font-size:12px;font-weight:700;color:var(--text3);"></span>
+      <button class="hbtn" onclick="showMode()">← Salir</button>
+    </div>
+  </div>
+  <nav class="app-nav">
+    <button class="nav-tab active" onclick="encNav('capt',this)">📋 Inventario del Día</button>
+    <button class="nav-tab" onclick="encNav('sal',this)">🚚 Despachar a Local</button>
+    <button class="nav-tab" onclick="encNav('ent',this)">📦 Llegó Mercancía</button>
+  </nav>
+  <div class="content">
+    <!-- CAPTURA -->
+    <div id="enc-capt">
+      <div class="sh"><div class="sh-title">¿Cuánto quedó hoy?</div><div class="sh-sub">Escribe el total que quedó al cerrar el día</div></div>
+      <div class="datebtn" onclick="document.getElementById('captDate').showPicker?.() || document.getElementById('captDate').focus()">
+        <span class="db-icon">📅</span>
+        <div><div class="db-lbl">Fecha</div><div class="db-val" id="captDateDisplay">—</div></div>
+        <input type="date" id="captDate" class="db-input" onchange="onCaptDateChange()">
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-track"><div class="prog-fill" id="captProg" style="width:0%"></div></div>
+        <div class="prog-lbl" id="captProgLbl">0 / 0</div>
+      </div>
+      <div class="ins-cards" id="captCards"></div>
+      <button class="bigbtn" onclick="saveCaptura()">✓ GUARDAR INVENTARIO DEL DÍA</button>
+    </div>
+    <!-- SALIDAS -->
+    <div id="enc-sal" style="display:none;">
+      <div class="sh"><div class="sh-title">Despachar a Locales</div><div class="sh-sub">Llena lo que sale a cada local — igual que tu formato de reparto</div></div>
+
+      <div class="datebtn" onclick="document.getElementById('salFecha').showPicker?.()||document.getElementById('salFecha').focus()">
+        <span class="db-icon">📅</span>
+        <div><div class="db-lbl">Fecha de reparto</div><div class="db-val" id="salFechaDisplay">—</div></div>
+        <input type="date" id="salFecha" class="db-input" onchange="onSalFechaChange()">
+      </div>
+
+      <!-- TABLA REPARTO — igual al Excel -->
+      <div style="overflow-x:auto;">
+        <table id="salTabla" style="width:100%;border-collapse:collapse;min-width:680px;">
+          <thead>
+            <tr>
+              <th style="background:var(--accent);color:var(--yellow);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:12px 14px;text-align:left;position:sticky;left:0;z-index:2;min-width:150px;">Materia Prima</th>
+              <th style="background:var(--accent);color:var(--yellow);font-family:var(--font);font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:12px 8px;text-align:center;min-width:40px;">Und</th>
+              <th style="background:#2980b9;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:90px;">Chapultepec</th>
+              <th style="background:#8e44ad;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:80px;">Tuxpan</th>
+              <th style="background:#e8453c;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:80px;">Sevilla</th>
+              <th style="background:#27ae60;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:90px;">Tacubaya</th>
+              <th style="background:#e67e22;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:100px;">Juanacatlán</th>
+              <th style="background:#16a085;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:90px;">Medellín</th>
+            </tr>
+          </thead>
+          <tbody id="salTbody"></tbody>
+        </table>
+      </div>
+
+      <button class="bigbtn" onclick="saveSalidas()" style="margin-top:16px;">🚚 GUARDAR REPARTO DEL DÍA</button>
+    </div>
+
+    <!-- ENTRADAS -->
+    <div id="enc-ent" style="display:none;">
+      <div class="sh"><div class="sh-title">Llegó Mercancía</div><div class="sh-sub">Registra lo que llegó del proveedor hoy</div></div>
+      <div class="card"><div class="card-b">
+        <div class="frow"><label class="flbl">📅 Fecha</label><input type="date" class="fctrl" id="entDate"></div>
+        <div class="frow"><label class="flbl">📦 ¿Qué insumo llegó?</label><select class="fctrl" id="entInsumo"></select></div>
+        <div class="frow">
+          <label class="flbl">🔢 ¿Cuánto llegó?</label>
+          <div style="display:flex;align-items:center;background:var(--bg3);border:2px solid var(--border);border-radius:var(--rs);overflow:hidden;">
+            <button class="nbtn" style="flex:1;width:auto;height:54px;" onclick="stepEnt(-1)">−</button>
+            <input type="number" class="ninput" id="entCant" style="flex:2;width:auto;height:54px;" placeholder="0" min="0" step="0.5">
+            <button class="nbtn" style="flex:1;width:auto;height:54px;" onclick="stepEnt(1)">+</button>
+          </div>
+        </div>
+        <div class="frow"><label class="flbl">🏷 Proveedor (opcional)</label><input type="text" class="fctrl" id="entProv" placeholder="Nombre del proveedor"></div>
+        <button class="bigbtn" style="margin-top:0;" onclick="saveEntrada()">+ REGISTRAR ENTRADA</button>
+      </div></div>
+      <div class="sh" style="margin-top:20px;margin-bottom:12px;"><div class="sh-title" style="font-size:20px;">Entradas de hoy</div></div>
+      <div class="ent-list" id="entListHoy"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ DUEÑO ══════════════ -->
+<div id="dueApp" style="display:none;">
+  <div class="app-header">
+    <div class="app-logo">Lafayette <span>·</span> Dashboard</div>
+    <div class="hbtns">
+      <span class="sync-dot" id="dueSyncDot"></span>
+      <button class="hbtn" id="refreshBtn" onclick="refreshDue()" title="Actualizar desde Sheets">↻ Actualizar</button>
+      <button class="hbtn yellow" onclick="exportExcel()">↓ Excel</button>
+      <button class="hbtn" onclick="showMode()">← Salir</button>
+    </div>
+  </div>
+  <nav class="app-nav">
+    <button class="nav-tab active" onclick="dueNav('resumen',this)">📊 Resumen</button>
+    <button class="nav-tab" onclick="dueNav('produccion',this)">🏭 Producción</button>
+    <button class="nav-tab" onclick="dueNav('sucursales',this)">🏪 Sucursales</button>
+    <button class="nav-tab" onclick="dueNav('merma',this)">🔍 Merma</button>
+    <button class="nav-tab" onclick="dueNav('hist',this)">📂 Historial</button>
+    <button class="nav-tab" onclick="dueNav('cfg',this)">⚙️ Config</button>
+  </nav>
+  <div class="content">
+
+    <!-- RESUMEN -->
+    <div id="dp-resumen" class="page active">
+      <div class="sh"><div class="sh-title">Resumen General</div><div class="sh-sub" id="resSubtitle"></div></div>
+      <div class="sg" id="resSG"></div>
+      <div id="resAlertas"></div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><span class="card-t">Estado del Inventario</span></div>
+          <div style="max-height:380px;overflow-y:auto;">
+            <table class="tbl" id="resTbl"><thead><tr><th>Insumo</th><th>Cant.</th><th>Valor</th><th>Consumo Hoy</th><th>Estado</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-t">Top Consumo · 7 Días</span></div>
+          <div class="card-b"><div class="cw"><canvas id="chartTop"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUCURSALES -->
+    <div id="dp-sucursales" class="page">
+      <div class="sh"><div class="sh-title">Despachos por Sucursal</div><div class="sh-sub">¿Cuánto material sale a cada local?</div></div>
+      <div class="pills" id="sucPills">
+        <button class="pill active" onclick="setSucPeriod(7,this)">7 días</button>
+        <button class="pill" onclick="setSucPeriod(14,this)">2 sem</button>
+        <button class="pill" onclick="setSucPeriod(30,this)">1 mes</button>
+      </div>
+      <div class="sg" id="sucSG"></div>
+      <div class="g2" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-h"><span class="card-t">Total Despachado por Sucursal</span></div>
+          <div class="card-b"><div class="cw"><canvas id="chartSucTotal"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-t">Costo por Sucursal</span></div>
+          <div class="card-b"><div class="cw"><canvas id="chartSucCosto"></canvas></div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-h">
+          <span class="card-t">Detalle por Sucursal</span>
+          <select class="fctrl" id="sucFiltro" style="font-size:12px;padding:6px 10px;width:auto;" onchange="renderSucursales()">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div style="max-height:420px;overflow-y:auto;">
+          <table class="tbl" id="sucTbl">
+            <thead><tr><th>Fecha</th><th>Sucursal</th><th>Insumo</th><th>Cantidad</th><th>Costo</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><span class="card-t">Comparativo de Insumos por Sucursal</span></div>
+        <div class="card-b">
+          <div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <select class="fctrl" id="sucInsumoComp" style="font-size:13px;padding:8px 12px;width:auto;min-width:180px;" onchange="renderSucComp()"></select>
+          </div>
+          <div class="cw"><canvas id="chartSucComp"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MERMA -->
+    <div id="dp-merma" class="page">
+      <div class="sh"><div class="sh-title">Detección de Merma</div><div class="sh-sub">Consumos anormales vs tu promedio histórico</div></div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-b" style="padding:14px 18px;">
+          <div style="font-size:13px;font-weight:700;color:var(--text2);line-height:1.6;">
+            🍎 <strong>Cómo funciona:</strong> La app calcula cuánto consumes normalmente de cada insumo por día. Si un día el consumo es <strong>más del doble</strong> del promedio, lo marca como posible merma — algo raro pasó ese día (rotura, desperdicio, error de captura).
+          </div>
+        </div>
+      </div>
+      <div class="pills" id="mermaPills">
+        <button class="pill active" onclick="setMermaPeriod(14,this)">2 sem</button>
+        <button class="pill" onclick="setMermaPeriod(30,this)">1 mes</button>
+        <button class="pill" onclick="setMermaPeriod(60,this)">2 meses</button>
+      </div>
+      <div class="sg" id="mermaSG"></div>
+      <div id="mermaList"></div>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-h"><span class="card-t">Consumo Histórico con Anomalías</span></div>
+        <div class="card-b">
+          <div style="margin-bottom:10px;">
+            <select class="fctrl" id="mermaInsumo" style="font-size:14px;padding:10px 14px;" onchange="renderMermaChart()"></select>
+          </div>
+          <div class="cw"><canvas id="chartMerma"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCCIÓN -->
+    <div id="dp-produccion" class="page">
+      <div class="sh"><div class="sh-title">Control de Producción</div><div class="sh-sub">Consumo real de fábrica — descontando lo que fue a locales</div></div>
+
+      <div class="pills" id="prodPills">
+        <button class="pill active" onclick="setProdPeriod(7,this)">7 días</button>
+        <button class="pill" onclick="setProdPeriod(14,this)">2 sem</button>
+        <button class="pill" onclick="setProdPeriod(30,this)">1 mes</button>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="sg" id="prodSG"></div>
+
+      <!-- Alertas de variación -->
+      <div id="prodAlertas" style="margin-bottom:14px;"></div>
+
+      <!-- Tabla principal -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-h">
+          <span class="card-t">Consumo de Fábrica por Insumo</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text3);">🔴 variación &gt;40% vs promedio</span>
+        </div>
+        <div style="max-height:480px;overflow-y:auto;">
+          <table class="tbl" id="prodTbl">
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th>Consumo Período</th>
+                <th>Prom/Día</th>
+                <th>Último Día</th>
+                <th>Variación</th>
+                <th>Costo Período</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Gráfica consumo por día de un insumo -->
+      <div class="card">
+        <div class="card-h">
+          <span class="card-t">Consumo Diario Fábrica</span>
+          <select class="fctrl" id="prodInsumo" style="font-size:12px;padding:6px 10px;width:auto;" onchange="renderProdChart()"></select>
+        </div>
+        <div class="card-b">
+          <div class="cw" style="height:260px;"><canvas id="chartProd"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div id="dp-hist" class="page">
+      <div class="sh"><div class="sh-title">Historial Completo</div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+        <div><div class="flbl">Desde</div><input type="date" class="fctrl" id="hDesde" style="font-size:14px;padding:10px 14px;"></div>
+        <div><div class="flbl">Hasta</div><input type="date" class="fctrl" id="hHasta" style="font-size:14px;padding:10px 14px;"></div>
+        <div><div class="flbl">Insumo</div><select class="fctrl" id="hInsumo" style="min-width:150px;font-size:14px;padding:10px 14px;"><option value="">Todos</option></select></div>
+        <button class="pill active" style="border-radius:8px;padding:12px 18px;" onclick="renderHist()">Filtrar</button>
+      </div>
+      <div class="card"><div style="max-height:560px;overflow-y:auto;">
+        <table class="tbl" id="histTbl"><thead><tr><th>Fecha</th><th>Insumo</th><th>Inv Final</th><th>Consumo Fábrica</th><th>Salidas Locales</th><th>Entradas</th><th>Costo Consumo</th><th>¿Merma?</th></tr></thead><tbody></tbody></table>
+      </div></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="dp-cfg" class="page">
+      <div class="sh"><div class="sh-title">Configuración</div></div>
+
+      <!-- SHEETS -->
+      <div class="card" style="margin-bottom:14px;">
+      <!-- PIN -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-h"><span class="card-t">🔒 PIN de Acceso</span></div>
+        <div class="card-b">
+          <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:14px;line-height:1.6;">
+            Protege el área del Dueño con un PIN de 4 dígitos. El encargado no podrá ver reportes, costos ni configuración.
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="bigbtn" style="margin-top:0;flex:1;min-width:160px;padding:13px;" onclick="openPin('setup1')">🔐 <span id="pinBtnLabel">Crear PIN</span></button>
+            <button class="bigbtn secondary" id="pinRemoveBtn" style="flex:1;min-width:140px;padding:13px;display:none;" onclick="removePin()">🔓 Quitar PIN</button>
+          </div>
+          <div id="pinStatus" style="font-size:12px;font-weight:700;margin-top:10px;"></div>
+        </div>
+      </div>
+
+        <div class="card-h"><span class="card-t">🔗 Conexión a Google Sheets</span></div>
+        <div class="card-b">
+
+          <!-- GUIDE STEPS -->
+          <div id="sheetGuide">
+            <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:16px;">Sigue estos 5 pasos — solo se hacen una vez:</div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+
+              <div style="display:flex;gap:14px;background:var(--bg3);border-radius:var(--rs);padding:14px 16px;border:2px solid var(--border);">
+                <div style="width:32px;height:32px;background:var(--accent);color:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;">1</div>
+                <div>
+                  <div style="font-size:14px;font-weight:800;margin-bottom:3px;">Crea una hoja en Google Sheets</div>
+                  <div style="font-size:12px;color:var(--text2);font-weight:600;line-height:1.5;">Ve a <strong>sheets.google.com</strong> → crea una hoja nueva → nómbrala <strong>"Lafayette Inventario"</strong> → dentro crea 3 pestañas (abajo): <strong>Inventarios</strong>, <strong>Entradas</strong>, <strong>Config</strong></div>
+                  <a href="https://sheets.google.com" target="_blank" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:800;color:var(--blue);text-decoration:none;">→ Abrir Google Sheets</a>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:14px;background:var(--bg3);border-radius:var(--rs);padding:14px 16px;border:2px solid var(--border);">
+                <div style="width:32px;height:32px;background:var(--accent);color:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;">2</div>
+                <div>
+                  <div style="font-size:14px;font-weight:800;margin-bottom:3px;">Abre el editor de scripts</div>
+                  <div style="font-size:12px;color:var(--text2);font-weight:600;line-height:1.5;">Dentro de tu hoja ve a <strong>Extensiones → Apps Script</strong>. Se abrirá una ventana nueva.</div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:14px;background:var(--bg3);border-radius:var(--rs);padding:14px 16px;border:2px solid var(--border);">
+                <div style="width:32px;height:32px;background:var(--accent);color:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;">3</div>
+                <div style="flex:1;">
+                  <div style="font-size:14px;font-weight:800;margin-bottom:6px;">Pega este código en Apps Script</div>
+                  <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:8px;line-height:1.5;">Borra todo lo que hay en la ventana y pega esto:</div>
+                  <div style="position:relative;">
+                    <pre id="scriptCode" style="background:var(--accent);color:#f7c948;font-family:var(--mono);font-size:11px;padding:14px;border-radius:var(--rs);overflow-x:auto;line-height:1.6;white-space:pre-wrap;word-break:break-all;">const SS_NAME = 'Lafayette Inventario';
+
+function doPost(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const data = JSON.parse(e.postData.contents);
+    const sheetName = data.tipo === 'inventario' ? 'Inventarios' : 'Entradas';
+    const sheet = ss.getSheetByName(sheetName);
+    data.registros.forEach(r => {
+      if (data.tipo === 'inventario') {
+        sheet.appendRow([r.fecha, r.nombre, r.unidad, r.valor, new Date().toLocaleString('es-MX')]);
+      } else {
+        sheet.appendRow([r.fecha, r.nombre, r.unidad, r.cantidad, r.proveedor||'', new Date().toLocaleString('es-MX')]);
+      }
+    });
+    return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ok:false,error:err.message})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    const action = e.parameter.action || 'test';
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (action === 'test') {
+      return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (action === 'getAll') {
+      const invSheet = ss.getSheetByName('Inventarios');
+      const entSheet = ss.getSheetByName('Entradas');
+      const invData = invSheet.getDataRange().getValues().slice(1)
+        .filter(r => r[0])
+        .map(r => ({fecha:r[0], nombre:r[1], unidad:r[2], valor:Number(r[3])}));
+      const entData = entSheet.getDataRange().getValues().slice(1)
+        .filter(r => r[0])
+        .map(r => ({fecha:r[0], nombre:r[1], unidad:r[2], cantidad:Number(r[3]), proveedor:r[4]||''}));
+      return ContentService.createTextOutput(JSON.stringify({ok:true, inventarios:invData, entradas:entData})).setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ok:false,error:err.message})).setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                    <button onclick="copyScript()" style="position:absolute;top:8px;right:8px;background:var(--yellow);border:none;border-radius:6px;padding:5px 12px;font-family:var(--font);font-size:11px;font-weight:800;cursor:pointer;color:var(--accent);" id="copyBtn">📋 Copiar</button>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:14px;background:var(--bg3);border-radius:var(--rs);padding:14px 16px;border:2px solid var(--border);">
+                <div style="width:32px;height:32px;background:var(--accent);color:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;">4</div>
+                <div>
+                  <div style="font-size:14px;font-weight:800;margin-bottom:3px;">Implementa como aplicación web</div>
+                  <div style="font-size:12px;color:var(--text2);font-weight:600;line-height:1.6;">
+                    En Apps Script clic en <strong>Implementar → Nueva implementación</strong><br>
+                    → Tipo: <strong>Aplicación web</strong><br>
+                    → Ejecutar como: <strong>Yo</strong><br>
+                    → Quién tiene acceso: <strong>Cualquier usuario</strong><br>
+                    → Clic en <strong>Implementar</strong> → autoriza los permisos<br>
+                    → <strong>Copia la URL</strong> que aparece (empieza con https://script.google.com...)
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:14px;background:var(--bg3);border-radius:var(--rs);padding:14px 16px;border:2px solid var(--border);">
+                <div style="width:32px;height:32px;background:var(--accent);color:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;">5</div>
+                <div style="flex:1;">
+                  <div style="font-size:14px;font-weight:800;margin-bottom:6px;">Pega la URL aquí abajo y guarda</div>
+                  <input type="text" class="fctrl" id="sheetUrl" style="font-size:13px;padding:12px 14px;" placeholder="https://script.google.com/macros/s/...">
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+                    <button class="bigbtn" style="margin-top:0;flex:1;min-width:130px;padding:13px;" onclick="saveSheetUrl()">💾 Guardar URL</button>
+                    <button class="bigbtn secondary" style="flex:1;min-width:130px;padding:13px;" onclick="testSheet()">🧪 Probar Conexión</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div style="background:#fffbe6;border:2px solid #f7c948;border-radius:var(--rs);padding:14px 16px;font-size:12px;font-weight:700;color:#7a6000;line-height:1.6;">
+              💡 <strong>¿Por qué funciona?</strong> El código que pegaste convierte tu Google Sheet en una "ventanilla" que recibe y entrega datos. La app envía los datos por esa ventanilla cuando el encargado guarda, y los pide de regreso cuando tú abres el dashboard.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><span class="card-t">💰 Costo por Unidad (MXN)</span></div>
+          <div style="max-height:380px;overflow-y:auto;padding:14px;"><div class="cfg-list" id="costosList"></div></div>
+          <div style="padding:14px;border-top:2px solid var(--border);"><button class="bigbtn" style="margin-top:0;" onclick="saveCostos()">✓ Guardar Costos</button></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-t">⚠️ Stock Mínimo (alerta)</span></div>
+          <div style="max-height:380px;overflow-y:auto;padding:14px;"><div class="cfg-list" id="minimosList"></div></div>
+          <div style="padding:14px;border-top:2px solid var(--border);"><button class="bigbtn" style="margin-top:0;" onclick="saveMinimos()">✓ Guardar Mínimos</button></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-h"><span class="card-t">🏭 Insumos Solo Fábrica</span><span style="font-size:11px;color:var(--text3);font-weight:700;">No aparecen en tabla de reparto a locales</span></div>
+        <div style="max-height:320px;overflow-y:auto;padding:14px;"><div class="cfg-list" id="soloFabList"></div></div>
+        <div style="padding:14px;border-top:2px solid var(--border);">
+          <button class="bigbtn" style="margin-top:0;" onclick="saveSoloFab()">✓ Guardar</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-h"><span class="card-t">✏️ Editar o Eliminar Insumos</span></div>
+        <div style="max-height:360px;overflow-y:auto;padding:14px;">
+          <div class="cfg-list" id="editInsumosList"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-h"><span class="card-t">➕ Agregar Nuevo Insumo</span></div>
+        <div class="card-b">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:2;min-width:140px;"><div class="flbl">Nombre</div><input type="text" class="fctrl" id="newNom" placeholder="Ej: LECHE CONDENSADA" style="font-size:15px;padding:11px 14px;"></div>
+            <div style="flex:1;min-width:90px;"><div class="flbl">Unidad</div><select class="fctrl" id="newUnd" style="font-size:15px;padding:11px 14px;"><option>KG</option><option>LT</option><option>PZA</option><option>CAJA</option><option>LATA</option><option>BOLSA</option></select></div>
+            <button class="bigbtn" style="margin-top:0;flex:1;min-width:120px;padding:13px;" onclick="addInsumo()">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-h"><span class="card-t">🗑 Datos</span></div>
+        <div class="card-b" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="bigbtn secondary" style="margin-top:0;flex:1;min-width:140px;padding:13px;" onclick="exportExcel()">↓ Exportar Excel</button>
+          <button class="bigbtn secondary" style="margin-top:0;flex:1;min-width:140px;padding:13px;color:var(--red);border-color:var(--red);" onclick="if(confirm('¿Borrar TODOS los registros locales?'))clearAll()">⚠ Borrar datos locales</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PIN OVERLAY -->
+<div id="pinOverlay">
+  <div class="pin-box">
+    <div class="pin-title" id="pinTitle">Área del Dueño</div>
+    <div class="pin-sub" id="pinSub">Ingresa tu PIN de 4 dígitos</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn del zero" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+    <div class="pin-cancel" onclick="pinCancel()">Cancelar</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════ DB ══════════
+const INSUMOS_DEF=[
+  {n:'ACEITE',u:'LT'},{n:'AZUCAR',u:'KG'},{n:'AZUCAR GLASS',u:'KG'},{n:'CHOCOLATE',u:'KG'},
+  {n:'CHANTILLY',u:'KG'},{n:'HARINA BLANCA',u:'KG'},{n:'MIX VAINILLA',u:'KG'},{n:'MIX BIZCOCHO',u:'KG'},
+  {n:'MIX BROWNIE',u:'KG'},{n:'MIX CROISSANT',u:'KG'},{n:'MIX 3 LECHES',u:'KG'},{n:'MIX CHOCO',u:'KG'},
+  {n:'MIX RED V',u:'KG'},{n:'HUEVO',u:'KG'},{n:'LECHE FAB',u:'LT'},{n:'LEVADURA',u:'PZA'},
+  {n:'MANTECA',u:'KG'},{n:'DANÉS',u:'KG'},{n:'UNTARELLA',u:'KG'},{n:'NONNA',u:'KG'},
+  {n:'FEITÉ',u:'KG'},{n:'QUESO',u:'KG'},{n:'LECHERA',u:'LT'},{n:'TOPPING',u:'PZA'},
+  {n:'ELOTE',u:'KG'},{n:'QUESO CREMA',u:'KG'},{n:'DURAZNO',u:'LATA'}
+];
+
+const SUCURSALES=['Chapultepec','Tuxpan','Sevilla','Tacubaya','Juanacatlán','Medellín','Observatorio (Fábrica)'];
+const SUC_COLORS=['#2980b9','#8e44ad','#e8453c','#27ae60','#e67e22','#16a085','#1c1a15'];
+
+let DB={insumos:[],inv:[],entradas:[],salidas:[],costos:{},minimos:{},soloFabrica:[],pin:'',sheetUrl:''};
+let charts={};
+let mermaPeriod=14, rotPeriod=14, tendPeriod=30;
+
+function loadDB(){
+  try{
+    const s=localStorage.getItem('laf_v3');
+    if(s) DB=JSON.parse(s);
+    if(!DB.insumos?.length) DB.insumos=INSUMOS_DEF.map(i=>({nombre:i.n,unidad:i.u}));
+    ['inv','entradas','salidas'].forEach(k=>{if(!DB[k]) DB[k]=[];});
+    ['costos','minimos'].forEach(k=>{if(!DB[k]) DB[k]={};});
+    if(!DB.soloFabrica||!DB.soloFabrica.length) DB.soloFabrica=[...SOLO_FABRICA];
+    if(!DB.sheetUrl) DB.sheetUrl='';
+  } catch(e){
+    DB={insumos:INSUMOS_DEF.map(i=>({nombre:i.n,unidad:i.u})),inv:[],entradas:[],costos:{},minimos:{},sheetUrl:''};
+  }
+}
+function saveDB(){try{localStorage.setItem('laf_v3',JSON.stringify(DB));}catch(e){}}
+
+// ══════════ UTILS ══════════
+function today(){return new Date().toISOString().split('T')[0];}
+function fmtD(d){if(!d) return '-';const[y,m,dd]=d.split('-');return `${dd}/${m}/${y}`;}
+function toast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+function fmt(n,d=1){return n!==null&&n!==undefined&&!isNaN(n)?Number(n).toFixed(d):'-';}
+function fmtMXN(n){if(n===null||n===undefined||isNaN(n)) return '-';return '$'+Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function getInvFechas(){return[...new Set(DB.inv.map(r=>r.fecha))].sort();}
+function getLastInv(){
+  const fs=getInvFechas();if(!fs.length) return{fecha:null,map:{}};
+  const f=fs[fs.length-1];const map={};
+  DB.inv.filter(r=>r.fecha===f).forEach(r=>{map[r.nombre]=r.valor;});
+  return{fecha:f,map};
+}
+function getPrevInv(beforeF){
+  const fs=getInvFechas().filter(f=>f<beforeF);
+  if(!fs.length) return{fecha:null,map:{}};
+  const f=fs[fs.length-1];const map={};
+  DB.inv.filter(r=>r.fecha===f).forEach(r=>{map[r.nombre]=r.valor;});
+  return{fecha:f,map};
+}
+function calcConsumo(nombre,fHoy,fPrev){
+  const h=DB.inv.find(r=>r.fecha===fHoy&&r.nombre===nombre);
+  const p=DB.inv.find(r=>r.fecha===fPrev&&r.nombre===nombre);
+  if(!h||!p) return null;
+  const ent=DB.entradas.filter(e=>e.fecha===fHoy&&e.nombre===nombre).reduce((s,e)=>s+Number(e.cantidad),0);
+  const sal=DB.salidas.filter(e=>e.fecha===fHoy&&e.nombre===nombre).reduce((s,e)=>s+Number(e.cantidad),0);
+  // consumo fábrica = inv_prev + entradas - salidas_a_locales - inv_hoy
+  return Number(p.valor)+ent-sal-Number(h.valor);
+}
+function calcSalidasDia(nombre,fecha){
+  return DB.salidas.filter(e=>e.fecha===fecha&&e.nombre===nombre).reduce((s,e)=>s+Number(e.cantidad),0);
+}
+function calcSalidasSucursal(sucursal,dias){
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-dias);
+  const cutoffStr=cutoff.toISOString().split('T')[0];
+  return DB.salidas.filter(s=>s.destino===sucursal&&s.fecha>=cutoffStr);
+}
+function getConsumoSeries(nombre,dias){
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-dias);
+  const cutoffStr=cutoff.toISOString().split('T')[0];
+  const fechas=getInvFechas().filter(f=>f>=cutoffStr);
+  const data=[];
+  for(let i=1;i<fechas.length;i++){
+    const c=calcConsumo(nombre,fechas[i],fechas[i-1]);
+    if(c!==null) data.push({fecha:fechas[i],consumo:c});
+  }
+  return data;
+}
+
+// ══════════ MODE ══════════
+// ══════════ PIN ══════════
+let pinBuffer='', pinMode='verify'; // modes: verify | setup1 | setup2
+let pinTemp='';
+
+function enterMode(m){
+  if(m==='enc'){
+    document.getElementById('modeScreen').style.display='none';
+    document.getElementById('encApp').style.display='block';
+    initEnc();
+  } else {
+    // Check if PIN is set
+    if(!DB.pin){
+      // No PIN yet — go straight in and prompt to set one
+      document.getElementById('modeScreen').style.display='none';
+      document.getElementById('dueApp').style.display='block';
+      initDue();
+      setTimeout(()=>toast('💡 Tip: configura un PIN en ⚙️ Config para proteger esta área',4000),1000);
+    } else {
+      openPin('verify');
+    }
+  }
+}
+
+function openPin(mode){
+  pinMode=mode; pinBuffer=''; pinTemp='';
+  const title=document.getElementById('pinTitle');
+  const sub=document.getElementById('pinSub');
+  if(mode==='verify'){title.textContent='Área del Dueño';sub.textContent='Ingresa tu PIN de 4 dígitos';}
+  else if(mode==='setup1'){title.textContent='Crear PIN';sub.textContent='Elige un PIN de 4 dígitos';}
+  else if(mode==='setup2'){title.textContent='Confirmar PIN';sub.textContent='Ingresa el PIN de nuevo';}
+  document.getElementById('pinErr').textContent='';
+  updatePinDots();
+  document.getElementById('pinOverlay').classList.add('show');
+}
+
+function pinPress(d){
+  if(pinBuffer.length>=4) return;
+  pinBuffer+=d;
+  updatePinDots();
+  if(pinBuffer.length===4) setTimeout(pinSubmit,180);
+}
+
+function pinDel(){
+  pinBuffer=pinBuffer.slice(0,-1);
+  updatePinDots();
+}
+
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    document.getElementById('pd'+i).classList.toggle('filled',i<pinBuffer.length);
+  }
+}
+
+function pinSubmit(){
+  if(pinMode==='verify'){
+    if(pinBuffer===DB.pin){
+      document.getElementById('pinOverlay').classList.remove('show');
+      document.getElementById('modeScreen').style.display='none';
+      document.getElementById('dueApp').style.display='block';
+      initDue();
+    } else {
+      document.getElementById('pinErr').textContent='PIN incorrecto, intenta de nuevo';
+      pinBuffer='';updatePinDots();
+    }
+  } else if(pinMode==='setup1'){
+    pinTemp=pinBuffer; pinBuffer='';
+    openPin('setup2');
+  } else if(pinMode==='setup2'){
+    if(pinBuffer===pinTemp){
+      DB.pin=pinBuffer; saveDB();
+      document.getElementById('pinOverlay').classList.remove('show');
+      toast('✅ PIN guardado correctamente');
+    } else {
+      document.getElementById('pinErr').textContent='Los PINs no coinciden, intenta de nuevo';
+      pinBuffer='';updatePinDots();
+    }
+  }
+}
+
+function pinCancel(){
+  document.getElementById('pinOverlay').classList.remove('show');
+  pinBuffer='';
+}
+
+function showMode(){
+  document.getElementById('modeScreen').style.display='flex';
+  document.getElementById('encApp').style.display='none';
+  document.getElementById('dueApp').style.display='none';
+}
+
+// ══════════ GOOGLE SHEETS SYNC ══════════
+// ══════════ GOOGLE SHEETS — ESCRITURA ══════════
+async function syncToSheet(payload){
+  if(!DB.sheetUrl) return;
+  setSyncStatus('enc','syncing','Enviando...');
+  try{
+    await fetch(DB.sheetUrl,{method:'POST',mode:'no-cors',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain'}});
+    setSyncStatus('enc','ok','Guardado en Sheets ✓');
+    setTimeout(()=>setSyncStatus('enc','ok','Conectado'),3000);
+  } catch(e){
+    setSyncStatus('enc','err','Error al sincronizar');
+  }
+}
+
+// ══════════ GOOGLE SHEETS — LECTURA (tiempo real) ══════════
+async function pullFromSheet(){
+  if(!DB.sheetUrl) return false;
+  setSyncStatus('due','syncing','Actualizando...');
+  try{
+    const r=await fetch(DB.sheetUrl+'?action=getAll&t='+Date.now());
+    if(!r.ok) throw new Error('bad response');
+    const data=await r.json();
+    if(data.inventarios) DB.inv=data.inventarios;
+    if(data.entradas) DB.entradas=data.entradas;
+    if(data.salidas) DB.salidas=data.salidas;
+    saveDB();
+    setSyncStatus('due','ok','Datos actualizados ✓');
+    setTimeout(()=>setSyncStatus('due','ok','Conectado'),3000);
+    return true;
+  } catch(e){
+    setSyncStatus('due','err','Sin conexión a Sheets');
+    return false;
+  }
+}
+
+async function testSheet(){
+  const url=document.getElementById('sheetUrl').value.trim();
+  if(!url){toast('Pega primero la URL del script');return;}
+  toast('Probando conexión...',4000);
+  try{
+    const r=await fetch(url+'?action=test&t='+Date.now());
+    const data=await r.json();
+    if(data.ok){toast('✅ Conexión exitosa con Google Sheets');}
+    else{toast('⚠️ Respuesta inesperada del script');}
+  } catch(e){toast('❌ No se pudo conectar. Revisa la URL y los permisos.');}
+}
+
+function setSyncStatus(mode,status,label){
+  const dot=document.getElementById(mode+'SyncDot');
+  const lbl=document.getElementById(mode+'SyncLabel');
+  if(!dot||!lbl) return;
+  dot.className='sync-dot '+status;
+  lbl.textContent=label;
+  lbl.style.color=status==='ok'?'var(--green)':status==='err'?'var(--red)':'var(--orange)';
+}
+
+function saveSheetUrl(){
+  DB.sheetUrl=document.getElementById('sheetUrl').value.trim();
+  saveDB();
+  toast('✅ URL guardada');
+  updateSheetBanner();
+}
+
+function updateSheetBanner(){
+  const b=document.getElementById('sheetBanner');
+  if(DB.sheetUrl){
+    b.style.display='flex';b.className='';
+    document.getElementById('sheetBannerText').textContent='☁️  Conectado a Google Sheets — datos en tiempo real';
+  } else {
+    b.style.display='none';
+  }
+}
+
+// ══════════ ENCARGADO ══════════
+function encNav(name,el){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+  document.getElementById('enc-capt').style.display=name==='capt'?'block':'none';
+  document.getElementById('enc-sal').style.display=name==='sal'?'block':'none';
+  document.getElementById('enc-ent').style.display=name==='ent'?'block':'none';
+  if(name==='sal') initSalidas();
+  if(name==='ent') initEntradas();
+}
+
+function initEnc(){
+  const f=today();
+  document.getElementById('captDate').value=f;
+  onCaptDateChange();
+  buildCaptCards();
+  if(DB.sheetUrl) setSyncStatus('enc','ok','Conectado');
+  else setSyncStatus('enc','na','Sin Sheets');
+}
+
+function onCaptDateChange(){
+  const f=document.getElementById('captDate').value||today();
+  const [y,m,d]=f.split('-');
+  const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const dt=new Date(+y,+m-1,+d);
+  document.getElementById('captDateDisplay').textContent=`${days[dt.getDay()]} ${d} ${months[+m-1]} ${y}`;
+  loadExistingCaptura(f);
+}
+
+function buildCaptCards(){
+  const f=document.getElementById('captDate').value||today();
+  const ex={};DB.inv.filter(r=>r.fecha===f).forEach(r=>{ex[r.nombre]=r.valor;});
+  document.getElementById('captCards').innerHTML=DB.insumos.map(ins=>{
+    const v=ex[ins.nombre]!==undefined?ex[ins.nombre]:'';
+    return `<div class="ic ${v!==''?'done':''}" id="ic-${ins.nombre.replace(/[\s\/]/g,'_')}">
+      <div class="ic-name">${ins.nombre}</div>
+      <div class="ic-unit">${ins.unidad}</div>
+      <div class="ic-num">
+        <button class="nbtn" onclick="stepIns('${ins.nombre}',-1)">−</button>
+        <input class="ninput" type="number" step="0.5" min="0"
+          id="inp-${ins.nombre.replace(/[\s\/]/g,'_')}"
+          value="${v}" placeholder="—"
+          oninput="onInsInput(this,'${ins.nombre}')">
+        <button class="nbtn" onclick="stepIns('${ins.nombre}',1)">+</button>
+      </div>
+      <span class="ic-chk">✅</span>
+    </div>`;
+  }).join('');
+  updateProg();
+}
+
+function loadExistingCaptura(f){
+  const ex={};DB.inv.filter(r=>r.fecha===f).forEach(r=>{ex[r.nombre]=r.valor;});
+  DB.insumos.forEach(ins=>{
+    const el=document.getElementById('inp-'+ins.nombre.replace(/[\s\/]/g,'_'));
+    if(!el) return;
+    const v=ex[ins.nombre]!==undefined?ex[ins.nombre]:'';
+    el.value=v;
+    const card=document.getElementById('ic-'+ins.nombre.replace(/[\s\/]/g,'_'));
+    if(v!=='') card.classList.add('done'); else card.classList.remove('done');
+  });
+  updateProg();
+}
+
+function stepIns(nombre,d){
+  const el=document.getElementById('inp-'+nombre.replace(/[\s\/]/g,'_'));
+  const cur=parseFloat(el.value)||0;
+  el.value=Math.max(0,+(cur+d).toFixed(1));
+  onInsInput(el,nombre);
+}
+function onInsInput(el,nombre){
+  const card=document.getElementById('ic-'+nombre.replace(/[\s\/]/g,'_'));
+  if(el.value!=='') card.classList.add('done'); else card.classList.remove('done');
+  updateProg();
+}
+function updateProg(){
+  const total=DB.insumos.length;
+  const filled=document.querySelectorAll('.ic.done').length;
+  const pct=total?filled/total*100:0;
+  document.getElementById('captProg').style.width=pct+'%';
+  document.getElementById('captProgLbl').textContent=`${filled} / ${total}`;
+}
+
+async function saveCaptura(){
+  const f=document.getElementById('captDate').value;
+  if(!f){toast('Selecciona la fecha');return;}
+  DB.inv=DB.inv.filter(r=>r.fecha!==f);
+  const rows=[];
+  DB.insumos.forEach(ins=>{
+    const el=document.getElementById('inp-'+ins.nombre.replace(/[\s\/]/g,'_'));
+    if(el&&el.value!==''){
+      const row={fecha:f,nombre:ins.nombre,unidad:ins.unidad,valor:parseFloat(el.value)};
+      DB.inv.push(row); rows.push(row);
+    }
+  });
+  saveDB();
+  toast(`✅ ${rows.length} insumos guardados`);
+  if(DB.sheetUrl && rows.length) await syncToSheet({tipo:'inventario',registros:rows});
+}
+
+// ENTRADAS
+function initEntradas(){
+  document.getElementById('entDate').value=today();
+  document.getElementById('entInsumo').innerHTML=DB.insumos.map(i=>`<option value="${i.nombre}">${i.nombre} (${i.unidad})</option>`).join('');
+  renderEntListHoy();
+}
+function stepEnt(d){const el=document.getElementById('entCant');el.value=Math.max(0,(parseFloat(el.value)||0)+d);}
+async function saveEntrada(){
+  const f=document.getElementById('entDate').value;
+  const n=document.getElementById('entInsumo').value;
+  const q=parseFloat(document.getElementById('entCant').value);
+  const p=document.getElementById('entProv').value;
+  if(!f||!n||isNaN(q)||q<=0){toast('Falta fecha, insumo o cantidad');return;}
+  const ins=DB.insumos.find(i=>i.nombre===n);
+  const row={fecha:f,nombre:n,unidad:ins?.unidad||'',cantidad:q,proveedor:p};
+  DB.entradas.push(row);saveDB();
+  document.getElementById('entCant').value='';document.getElementById('entProv').value='';
+  renderEntListHoy();toast(`✅ Entrada de ${n} registrada`);
+  if(DB.sheetUrl) await syncToSheet({tipo:'entrada',registros:[row]});
+}
+function renderEntListHoy(){
+  const hoy=document.getElementById('entDate').value||today();
+  const list=document.getElementById('entListHoy');
+  const items=DB.entradas.filter(e=>e.fecha===hoy);
+  if(!items.length){list.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-weight:700;font-size:15px;">Sin entradas registradas</div>';return;}
+  list.innerHTML=[...items].reverse().map(e=>{
+    const ri=DB.entradas.indexOf(e);
+    return `<div class="ent-item">
+      <span class="ei-icon">📦</span>
+      <div class="ei-info"><div class="ei-name">${e.nombre}</div><div class="ei-meta">${fmtD(e.fecha)}${e.proveedor?' · '+e.proveedor:''}</div></div>
+      <div class="ei-qty">+${e.cantidad} ${e.unidad}</div>
+      <button class="ei-del" onclick="delEntrada(${ri})">✕</button>
+    </div>`;
+  }).join('');
+}
+function delEntrada(i){DB.entradas.splice(i,1);saveDB();renderEntListHoy();toast('Entrada eliminada');}
+
+// ══════════ SALIDAS — TABLA REPARTO ══════════
+const SAL_SUCURSALES=['Chapultepec','Tuxpan','Sevilla','Tacubaya','Juanacatlán','Medellín'];
+
+function initSalidas(){
+  const f=today();
+  document.getElementById('salFecha').value=f;
+  onSalFechaChange();
+}
+
+function onSalFechaChange(){
+  const f=document.getElementById('salFecha').value||today();
+  const[y,m,d]=f.split('-');
+  const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const dt=new Date(+y,+m-1,+d);
+  document.getElementById('salFechaDisplay').textContent=`${days[dt.getDay()]} ${d} ${months[+m-1]} ${y}`;
+  buildSalTabla(f);
+}
+
+function buildSalTabla(fecha){
+  // load existing salidas for this date
+  const existing={};
+  DB.salidas.filter(s=>s.fecha===fecha).forEach(s=>{
+    if(!existing[s.nombre]) existing[s.nombre]={};
+    existing[s.nombre][s.destino]=s.cantidad;
+  });
+
+  const tbody=document.getElementById('salTbody');
+  const insumosReparto=DB.insumos.filter(ins=>{
+    const soloFab=DB.soloFabrica||SOLO_FABRICA;
+    return !soloFab.includes(ins.nombre.toUpperCase().trim());
+  });
+  tbody.innerHTML=insumosReparto.map(ins=>{
+    const key=ins.nombre.replace(/[\s\/áéíóúñ]/g,'_');
+    const cells=SAL_SUCURSALES.map(suc=>{
+      const val=existing[ins.nombre]?.[suc]||'';
+      return `<td style="padding:6px 8px;border-bottom:1px solid var(--border);">
+        <input class="sal-input ${val?'filled':''}" type="number" step="0.5" min="0"
+          id="sal_${key}_${suc.replace(/[\s]/g,'_')}"
+          data-insumo="${ins.nombre}" data-suc="${suc}"
+          value="${val}" placeholder="—"
+          oninput="this.classList.toggle('filled',this.value!=='')">
+      </td>`;
+    }).join('');
+    return `<tr class="sal-row">
+      <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-family:var(--font);font-size:15px;font-weight:800;position:sticky;left:0;background:var(--bg2);z-index:1;">${ins.nombre}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;">${ins.unidad}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+}
+
+async function saveSalidas(){
+  const f=document.getElementById('salFecha').value;
+  if(!f){toast('Selecciona la fecha');return;}
+
+  // Remove existing salidas for this date
+  DB.salidas=DB.salidas.filter(s=>s.fecha!==f);
+
+  const rows=[];
+  document.querySelectorAll('.sal-input').forEach(el=>{
+    if(el.value!==''&&parseFloat(el.value)>0){
+      const ins=DB.insumos.find(i=>i.nombre===el.dataset.insumo);
+      rows.push({fecha:f,nombre:el.dataset.insumo,unidad:ins?.unidad||'',cantidad:parseFloat(el.value),destino:el.dataset.suc});
+    }
+  });
+
+  DB.salidas.push(...rows);
+  saveDB();
+  toast(`✅ Reparto guardado — ${rows.length} registros`);
+  if(DB.sheetUrl&&rows.length) await syncToSheet({tipo:'salida',registros:rows});
+}
+
+function delSalida(i){DB.salidas.splice(i,1);saveDB();toast('Despacho eliminado');}
+
+// ══════════ DUEÑO ══════════
+async function initDue(){
+  populateSelects();
+  if(DB.sheetUrl){
+    document.getElementById('sheetUrl').value=DB.sheetUrl;
+    setSyncStatus('due','syncing','Cargando datos...');
+    const ok=await pullFromSheet();
+    if(ok) populateSelects();
+  } else {
+    setSyncStatus('due','err','Sin Sheets');
+  }
+  renderResumen();
+  updateSheetBanner();
+}
+
+async function refreshDue(){
+  const btn=document.getElementById('refreshBtn');
+  if(btn){btn.textContent='↻ Cargando...';btn.disabled=true;}
+  const ok=await pullFromSheet();
+  if(ok){
+    populateSelects();
+    // re-render current active page
+    const active=document.querySelector('#dueApp .page.active');
+    if(active){
+      const id=active.id.replace('dp-','');
+      if(id==='resumen') renderResumen();
+      else if(id==='produccion') renderProduccion();
+      else if(id==='sucursales') renderSucursales();
+      else if(id==='merma') renderMerma();
+      else if(id==='hist') renderHist();
+    }
+    toast('✅ Datos actualizados desde Sheets');
+  } else if(!DB.sheetUrl){
+    toast('Primero configura la URL de Google Sheets');
+  }
+  if(btn){btn.textContent='↻ Actualizar';btn.disabled=false;}
+}
+
+let sucPeriod=7, prodPeriod=7;
+
+function setSucPeriod(d,el){sucPeriod=d;document.querySelectorAll('#sucPills .pill').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderSucursales();}
+function setProdPeriod(d,el){prodPeriod=d;document.querySelectorAll('#prodPills .pill').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderProduccion();}
+
+function dueNav(name,el){
+  document.querySelectorAll('#dueApp .nav-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('dp-'+name).classList.add('active');
+  if(name==='resumen') renderResumen();
+  if(name==='produccion') renderProduccion();
+  if(name==='sucursales') renderSucursales();
+  if(name==='merma') renderMerma();
+  if(name==='hist') renderHist();
+  if(name==='cfg') renderCfg();
+}
+
+function populateSelects(){
+  [document.getElementById('tendInsumo'),document.getElementById('mermaInsumo')].forEach(s=>{
+    if(!s) return;
+    s.innerHTML=DB.insumos.map(i=>`<option value="${i.nombre}">${i.nombre}</option>`).join('');
+  });
+  const hi=document.getElementById('hInsumo');
+  if(hi) hi.innerHTML='<option value="">Todos</option>'+DB.insumos.map(i=>`<option value="${i.nombre}">${i.nombre}</option>`).join('');
+  const d30=new Date();d30.setDate(d30.getDate()-30);
+  if(document.getElementById('hDesde')) document.getElementById('hDesde').value=d30.toISOString().split('T')[0];
+  if(document.getElementById('hHasta')) document.getElementById('hHasta').value=today();
+}
+
+// ── RESUMEN ──
+function renderResumen(){
+  const last=getLastInv();
+  document.getElementById('resSubtitle').textContent=last.fecha?`Última captura: ${fmtD(last.fecha)}`:'Sin capturas aún';
+  let bajos=0,criticos=0,valTotal=0;
+  DB.insumos.forEach(ins=>{
+    const v=last.map[ins.nombre]??null;const min=DB.minimos[ins.nombre];const c=DB.costos[ins.nombre];
+    if(v!==null){if(c) valTotal+=v*c;if(min){if(v<=min*.5) criticos++;else if(v<=min) bajos++;}}
+  });
+  const captHoy=DB.inv.some(r=>r.fecha===today());
+  document.getElementById('resSG').innerHTML=[
+    {l:'Valor Inventario',v:fmtMXN(valTotal),s:'en bodega',cls:'hl'},
+    {l:'Stocks Bajos',v:bajos,s:'bajo mínimo',cls:bajos?'warn':''},
+    {l:'Stocks Críticos',v:criticos,s:'bajo 50% mínimo',cls:criticos?'danger':''},
+    {l:'Captura Hoy',v:captHoy?'✓':'—',s:captHoy?'registrada':'pendiente',cls:captHoy?'good':'warn'}
+  ].map(s=>`<div class="sbox ${s.cls}"><div class="sl">${s.l}</div><div class="sv">${s.v}</div><div class="sm">${s.s}</div></div>`).join('');
+  let al='';
+  DB.insumos.forEach(ins=>{
+    const v=last.map[ins.nombre]??null;const min=DB.minimos[ins.nombre];
+    if(v!==null&&min){
+      if(v<=min*.5) al+=`<div class="al-item danger"><span class="al-icon">🚨</span><div><div class="al-name">${ins.nombre}</div><div class="al-sub">Quedan ${v} ${ins.unidad} · Mínimo: ${min}</div></div></div>`;
+      else if(v<=min) al+=`<div class="al-item warn"><span class="al-icon">⚠️</span><div><div class="al-name">${ins.nombre}</div><div class="al-sub">Quedan ${v} ${ins.unidad} · Mínimo: ${min}</div></div></div>`;
+    }
+  });
+  document.getElementById('resAlertas').innerHTML=al;
+  const last2=getLastInv();const prev=last2.fecha?getPrevInv(last2.fecha):null;
+  const tbody=document.querySelector('#resTbl tbody');tbody.innerHTML='';
+  DB.insumos.forEach(ins=>{
+    const v=last2.map[ins.nombre]??null;const min=DB.minimos[ins.nombre];const c=DB.costos[ins.nombre];
+    const consumo=last2.fecha&&prev?.fecha?calcConsumo(ins.nombre,last2.fecha,prev.fecha):null;
+    const valor=v!==null&&c?fmtMXN(v*c):'-';
+    let badge='<span class="badge b-na">—</span>';
+    if(v!==null&&min){if(v<=min*.5) badge='<span class="badge b-danger">Crítico</span>';else if(v<=min) badge='<span class="badge b-warn">Bajo</span>';else badge='<span class="badge b-ok">OK</span>';}
+    tbody.innerHTML+=`<tr><td class="tn">${ins.nombre}</td><td>${v!==null?fmt(v):'-'} ${ins.unidad}</td><td>${valor}</td><td>${consumo!==null?fmt(consumo):'-'}</td><td>${badge}</td></tr>`;
+  });
+  renderChartTop();
+}
+
+function renderChartTop(){
+  const fechas=getInvFechas().slice(-8);if(fechas.length<2) return;
+  const cons={};
+  DB.insumos.forEach(ins=>{let t=0;for(let i=1;i<fechas.length;i++){const c=calcConsumo(ins.nombre,fechas[i],fechas[i-1]);if(c!==null&&c>0) t+=c;}cons[ins.nombre]=t;});
+  const sorted=Object.entries(cons).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if(charts.top) charts.top.destroy();
+  charts.top=new Chart(document.getElementById('chartTop').getContext('2d'),{
+    type:'bar',data:{labels:sorted.map(([n])=>n),datasets:[{data:sorted.map(([,v])=>+v.toFixed(2)),backgroundColor:'rgba(28,26,21,.75)',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#aaa',font:{size:10}},grid:{color:'#ece9e1'}},y:{ticks:{color:'#1c1a15',font:{size:12,weight:'800'}},grid:{display:false}}}}
+  });
+}
+
+// ══════════ SUCURSALES (DUEÑO) ══════════
+function renderSucursales(){
+  // populate selects
+  const sf=document.getElementById('sucFiltro');
+  if(sf) sf.innerHTML='<option value="">Todas</option>'+SUCURSALES.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const sc=document.getElementById('sucInsumoComp');
+  if(sc) sc.innerHTML=DB.insumos.map(i=>`<option value="${i.nombre}">${i.nombre}</option>`).join('');
+
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-sucPeriod);
+  const cutoffStr=cutoff.toISOString().split('T')[0];
+  const salPeriod=DB.salidas.filter(s=>s.fecha>=cutoffStr);
+
+  // Stats por sucursal
+  const totalPorSuc={};
+  const costoPorSuc={};
+  SUCURSALES.forEach(suc=>{
+    const items=salPeriod.filter(s=>s.destino===suc);
+    totalPorSuc[suc]=items.length;
+    costoPorSuc[suc]=items.reduce((sum,s)=>{const c=DB.costos[s.nombre]||0;return sum+s.cantidad*c;},0);
+  });
+
+  // Stat cards — top 2 sucursales por costo
+  const sorted=SUCURSALES.slice().sort((a,b)=>(costoPorSuc[b]||0)-(costoPorSuc[a]||0));
+  const totalCosto=Object.values(costoPorSuc).reduce((a,b)=>a+b,0);
+  const totalDespachos=salPeriod.length;
+  document.getElementById('sucSG').innerHTML=[
+    {l:'Total Despachos',v:totalDespachos,s:`en ${sucPeriod} días`,cls:''},
+    {l:'Costo Total Despachado',v:fmtMXN(totalCosto),s:'a todos los locales',cls:'hl'},
+    {l:'Mayor Receptor',v:sorted[0]||'—',s:fmtMXN(costoPorSuc[sorted[0]]||0),cls:'warn'},
+    {l:'Menor Receptor',v:sorted[sorted.length-1]||'—',s:fmtMXN(costoPorSuc[sorted[sorted.length-1]]||0),cls:''}
+  ].map(s=>`<div class="sbox ${s.cls}"><div class="sl">${s.l}</div><div class="sv" style="font-size:${s.v.toString().length>8?'16px':'22px'}">${s.v}</div><div class="sm">${s.s}</div></div>`).join('');
+
+  // Chart total por sucursal (bar)
+  if(charts.sucTotal) charts.sucTotal.destroy();
+  const ctx1=document.getElementById('chartSucTotal')?.getContext('2d');
+  if(ctx1) charts.sucTotal=new Chart(ctx1,{
+    type:'bar',
+    data:{labels:SUCURSALES,datasets:[{data:SUCURSALES.map(s=>salPeriod.filter(x=>x.destino===s).reduce((sum,x)=>sum+x.cantidad,0).toFixed(1)),backgroundColor:SUC_COLORS,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#6b6659',font:{size:10,weight:'700'}},grid:{display:false}},y:{ticks:{color:'#aaa',font:{size:10}},grid:{color:'#ece9e1'}}}}
+  });
+
+  // Chart costo por sucursal (doughnut)
+  if(charts.sucCosto) charts.sucCosto.destroy();
+  const ctx2=document.getElementById('chartSucCosto')?.getContext('2d');
+  if(ctx2) charts.sucCosto=new Chart(ctx2,{
+    type:'doughnut',
+    data:{labels:SUCURSALES,datasets:[{data:SUCURSALES.map(s=>+(costoPorSuc[s]||0).toFixed(2)),backgroundColor:SUC_COLORS,borderWidth:2,borderColor:'white'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{font:{size:10,family:'Nunito',weight:'700'},color:'#6b6659',boxWidth:10}}}}
+  });
+
+  // Table
+  const filtro=document.getElementById('sucFiltro')?.value||'';
+  const tbody=document.querySelector('#sucTbl tbody');
+  if(tbody){
+    const rows=salPeriod.filter(s=>!filtro||s.destino===filtro).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    tbody.innerHTML=rows.length?rows.map(s=>{
+      const c=DB.costos[s.nombre];const costo=c?fmtMXN(s.cantidad*c):'-';
+      return `<tr><td>${fmtD(s.fecha)}</td><td><span class="badge" style="background:${SUC_COLORS[SUCURSALES.indexOf(s.destino)]}22;color:${SUC_COLORS[SUCURSALES.indexOf(s.destino)]};">${s.destino}</span></td><td class="tn">${s.nombre}</td><td>${s.cantidad} ${s.unidad}</td><td>${costo}</td></tr>`;
+    }).join(''):'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3);font-weight:700;">Sin despachos en este período</td></tr>';
+  }
+  renderSucComp();
+}
+
+function renderSucComp(){
+  const ins=document.getElementById('sucInsumoComp')?.value||DB.insumos[0]?.nombre;
+  if(!ins) return;
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-sucPeriod);
+  const cutoffStr=cutoff.toISOString().split('T')[0];
+  const data=SUCURSALES.map(suc=>DB.salidas.filter(s=>s.fecha>=cutoffStr&&s.destino===suc&&s.nombre===ins).reduce((sum,s)=>sum+s.cantidad,0));
+  if(charts.sucComp) charts.sucComp.destroy();
+  const ctx=document.getElementById('chartSucComp')?.getContext('2d');
+  if(!ctx) return;
+  const insu=DB.insumos.find(i=>i.nombre===ins);
+  charts.sucComp=new Chart(ctx,{
+    type:'bar',
+    data:{labels:SUCURSALES,datasets:[{label:ins,data:data.map(v=>+v.toFixed(2)),backgroundColor:SUC_COLORS,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y} ${insu?.unidad||''}`}}},
+      scales:{x:{ticks:{color:'#6b6659',font:{size:11,weight:'700'}},grid:{display:false}},y:{ticks:{color:'#aaa',font:{size:10}},grid:{color:'#ece9e1'}}}}
+  });
+}
+
+// ── MERMA ──
+function setMermaPeriod(d,el){mermaPeriod=d;document.querySelectorAll('#mermaPills .pill').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderMerma();}
+
+function renderMerma(){
+  populateSelects();
+  // Calc anomalies for all insumos
+  let totalAnomalias=0,totalMermaVal=0;
+  const anomaliasList=[];
+
+  DB.insumos.forEach(ins=>{
+    const series=getConsumoSeries(ins.nombre,mermaPeriod);
+    const valids=series.filter(s=>s.consumo>0).map(s=>s.consumo);
+    if(valids.length<2) return;
+    const avg=valids.reduce((a,b)=>a+b,0)/valids.length;
+    const umbral=avg*2.2;
+    series.forEach(s=>{
+      if(s.consumo>umbral){
+        totalAnomalias++;
+        const costo=DB.costos[ins.nombre];
+        const excess=(s.consumo-avg);
+        const val=costo?excess*costo:null;
+        if(val) totalMermaVal+=val;
+        anomaliasList.push({ins:ins.nombre,unidad:ins.unidad,fecha:s.fecha,consumo:s.consumo,avg,excess,val});
+      }
+    });
+  });
+
+  document.getElementById('mermaSG').innerHTML=[
+    {l:'Anomalías Detectadas',v:totalAnomalias,s:'en el período',cls:totalAnomalias>0?'danger':'good'},
+    {l:'Merma Estimada',v:fmtMXN(totalMermaVal),s:'exceso vs promedio',cls:totalMermaVal>0?'warn':''}
+  ].map(s=>`<div class="sbox ${s.cls}"><div class="sl">${s.l}</div><div class="sv" style="font-size:24px;">${s.v}</div><div class="sm">${s.s}</div></div>`).join('');
+
+  const listEl=document.getElementById('mermaList');
+  if(!anomaliasList.length){
+    listEl.innerHTML='<div class="al-item" style="background:var(--bg2);border-color:var(--border);"><span class="al-icon">✅</span><div><div class="al-name">Sin anomalías detectadas</div><div class="al-sub">El consumo se ve normal en el período seleccionado</div></div></div>';
+  } else {
+    anomaliasList.sort((a,b)=>b.excess-a.excess);
+    listEl.innerHTML=anomaliasList.map(a=>`
+      <div class="al-item merma">
+        <span class="al-icon">🔍</span>
+        <div style="flex:1;">
+          <div class="al-name">${a.ins} — ${fmtD(a.fecha)}</div>
+          <div class="al-sub">Consumo: ${fmt(a.consumo)} ${a.unidad} · Promedio: ${fmt(a.avg)} · Exceso: +${fmt(a.excess)}${a.val?' ('+fmtMXN(a.val)+')':''}</div>
+        </div>
+        <span class="badge b-danger">Revisar</span>
+      </div>`).join('');
+  }
+  renderMermaChart();
+}
+
+function renderMermaChart(){
+  const ins=document.getElementById('mermaInsumo')?.value||DB.insumos[0]?.nombre;
+  if(!ins) return;
+  const series=getConsumoSeries(ins,mermaPeriod);
+  const valids=series.filter(s=>s.consumo>0).map(s=>s.consumo);
+  const avg=valids.length?valids.reduce((a,b)=>a+b,0)/valids.length:0;
+  const umbral=avg*2.2;
+  const labels=series.map(s=>fmtD(s.fecha));
+  const data=series.map(s=>+s.consumo.toFixed(2));
+  const colors=data.map(v=>v>umbral?'rgba(232,69,60,0.8)':'rgba(28,26,21,0.65)');
+  if(charts.merma) charts.merma.destroy();
+  charts.merma=new Chart(document.getElementById('chartMerma').getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {data,backgroundColor:colors,borderRadius:3,label:'Consumo'},
+      {type:'line',data:Array(data.length).fill(+avg.toFixed(2)),borderColor:'rgba(39,174,96,0.8)',borderWidth:2,borderDash:[5,5],pointRadius:0,label:'Promedio'},
+      {type:'line',data:Array(data.length).fill(+umbral.toFixed(2)),borderColor:'rgba(232,69,60,0.5)',borderWidth:1.5,borderDash:[3,3],pointRadius:0,label:'Umbral'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:11,family:'Nunito',weight:'700'},color:'#6b6659',boxWidth:12}}},
+      scales:{x:{ticks:{color:'#aaa',font:{size:9},maxRotation:45},grid:{color:'#ece9e1'}},y:{ticks:{color:'#aaa',font:{size:10}},grid:{color:'#ece9e1'}}}}
+  });
+}
+
+// ── ROTACIÓN ──
+// ── PRODUCCIÓN ──
+const SOLO_FABRICA=['MIX 3 LECHES','MIX BROWNIE','MIX CROISSANT','MIX CHOCO','MIX RED V','LECHE FAB','NONNA','LECHERA','ELOTE','DURAZNO','UNTARELLA','TOPPING'];
+
+function renderProduccion(){
+  // Populate insumo selector
+  const sel=document.getElementById('prodInsumo');
+  if(sel) sel.innerHTML=DB.insumos.map(i=>`<option value="${i.nombre}">${i.nombre}</option>`).join('');
+
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-prodPeriod);
+  const cutoffStr=cutoff.toISOString().split('T')[0];
+  const fechas=getInvFechas().filter(f=>f>=cutoffStr);
+
+  let totalCostoFab=0, insumosConVariacion=0;
+  const rows=[];
+
+  DB.insumos.forEach(ins=>{
+    // Get consumo series for fab (already subtracts salidas)
+    const series=[];
+    for(let i=1;i<fechas.length;i++){
+      const c=calcConsumo(ins.nombre,fechas[i],fechas[i-1]);
+      if(c!==null) series.push({fecha:fechas[i],consumo:c});
+    }
+    if(!series.length) return;
+
+    const valids=series.filter(s=>s.consumo>0).map(s=>s.consumo);
+    if(!valids.length) return;
+
+    const total=valids.reduce((a,b)=>a+b,0);
+    const avg=total/valids.length;
+    const ultimo=series[series.length-1]?.consumo??null;
+    const variacion=avg>0&&ultimo!==null?((ultimo-avg)/avg)*100:null;
+    const c=DB.costos[ins.nombre];
+    const costoTotal=c?total*c:null;
+    if(costoTotal) totalCostoFab+=costoTotal;
+    if(variacion!==null&&Math.abs(variacion)>40) insumosConVariacion++;
+
+    rows.push({ins,total,avg,ultimo,variacion,costoTotal,series});
+  });
+
+  rows.sort((a,b)=>{
+    // Sort: anomalies first, then by total desc
+    const aAnom=a.variacion!==null&&Math.abs(a.variacion)>40?1:0;
+    const bAnom=b.variacion!==null&&Math.abs(b.variacion)>40?1:0;
+    if(aAnom!==bAnom) return bAnom-aAnom;
+    return b.total-a.total;
+  });
+
+  // KPI cards
+  document.getElementById('prodSG').innerHTML=[
+    {l:'Costo Producción',v:fmtMXN(totalCostoFab),s:`en ${prodPeriod} días`,cls:'hl'},
+    {l:'Insumos con Variación',v:insumosConVariacion,s:'consumo anormal vs promedio',cls:insumosConVariacion>0?'danger':'good'},
+    {l:'Días Analizados',v:fechas.length>1?fechas.length-1:0,s:'con datos completos',cls:''},
+  ].map(s=>`<div class="sbox ${s.cls}"><div class="sl">${s.l}</div><div class="sv" style="font-size:${s.v.toString().length>8?'18px':'26px'}">${s.v}</div><div class="sm">${s.s}</div></div>`).join('');
+
+  // Alertas de variación grande
+  const alertas=rows.filter(r=>r.variacion!==null&&Math.abs(r.variacion)>40);
+  const alertEl=document.getElementById('prodAlertas');
+  if(alertas.length){
+    alertEl.innerHTML=alertas.map(r=>{
+      const sube=r.variacion>0;
+      return `<div class="al-item ${sube?'merma':'warn'}" style="margin-bottom:8px;">
+        <span class="al-icon">${sube?'📈':'📉'}</span>
+        <div style="flex:1;">
+          <div class="al-name">${r.ins.nombre}</div>
+          <div class="al-sub">Último día: ${fmt(r.ultimo)} ${r.ins.unidad} · Promedio: ${fmt(r.avg)} · Variación: ${sube?'+':''}${fmt(r.variacion,0)}%</div>
+        </div>
+        <span class="badge ${sube?'b-danger':'b-yellow'}">${sube?'↑ Consumo alto':'↓ Consumo bajo'}</span>
+      </div>`;
+    }).join('');
+  } else {
+    alertEl.innerHTML=`<div class="al-item" style="background:var(--bg2);border-color:var(--border);margin-bottom:8px;">
+      <span class="al-icon">✅</span><div><div class="al-name">Producción estable</div>
+      <div class="al-sub">Ningún insumo tiene variación mayor al 40% vs su promedio</div></div></div>`;
+  }
+
+  // Main table
+  const tbody=document.querySelector('#prodTbl tbody');tbody.innerHTML='';
+  rows.forEach(r=>{
+    const hasAnomaly=r.variacion!==null&&Math.abs(r.variacion)>40;
+    const varStyle=r.variacion===null?'':(r.variacion>40?'color:var(--red);font-weight:800;':r.variacion<-40?'color:var(--blue);font-weight:800;':'color:var(--green);font-weight:700;');
+    let badge='<span class="badge b-ok">Normal</span>';
+    if(r.variacion===null) badge='<span class="badge b-na">Sin datos</span>';
+    else if(r.variacion>40) badge='<span class="badge b-danger">↑ Alto</span>';
+    else if(r.variacion<-40) badge='<span class="badge b-blue">↓ Bajo</span>';
+
+    tbody.innerHTML+=`<tr style="${hasAnomaly?'background:#fff8f8;':''}">
+      <td class="tn" style="${hasAnomaly?'color:var(--red);':''}">${r.ins.nombre}</td>
+      <td>${fmt(r.total)} ${r.ins.unidad}</td>
+      <td>${fmt(r.avg)} ${r.ins.unidad}</td>
+      <td>${r.ultimo!==null?fmt(r.ultimo)+' '+r.ins.unidad:'—'}</td>
+      <td style="${varStyle}">${r.variacion!==null?(r.variacion>0?'+':'')+fmt(r.variacion,0)+'%':'—'}</td>
+      <td>${r.costoTotal?fmtMXN(r.costoTotal):'—'}</td>
+      <td>${badge}</td>
+    </tr>`;
+  });
+  if(!rows.length) tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text3);font-weight:700;">Captura al menos 2 días de inventario para ver el análisis</td></tr>';
+
+  renderProdChart();
+}
+
+function renderProdChart(){
+  const ins=document.getElementById('prodInsumo')?.value||DB.insumos[0]?.nombre;
+  if(!ins) return;
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-prodPeriod);
+  const cutoffStr=cutoff.toISOString().split('T')[0];
+  const fechas=getInvFechas().filter(f=>f>=cutoffStr);
+  const series=[];
+  for(let i=1;i<fechas.length;i++){
+    const c=calcConsumo(ins,fechas[i],fechas[i-1]);
+    if(c!==null) series.push({f:fechas[i],c});
+  }
+  if(!series.length) return;
+  const valids=series.filter(s=>s.c>0).map(s=>s.c);
+  const avg=valids.length?valids.reduce((a,b)=>a+b,0)/valids.length:0;
+  const umbral40hi=avg*1.4, umbral40lo=avg*0.6;
+  const colors=series.map(s=>s.c>umbral40hi?'rgba(232,69,60,0.8)':s.c<umbral40lo&&s.c>=0?'rgba(41,128,185,0.7)':'rgba(28,26,21,0.65)');
+
+  if(charts.prod) charts.prod.destroy();
+  charts.prod=new Chart(document.getElementById('chartProd').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:series.map(s=>fmtD(s.f)),
+      datasets:[
+        {data:series.map(s=>+s.c.toFixed(2)),backgroundColor:colors,borderRadius:3,label:'Consumo Fábrica'},
+        {type:'line',data:Array(series.length).fill(+avg.toFixed(2)),borderColor:'rgba(39,174,96,0.9)',borderWidth:2,borderDash:[6,4],pointRadius:0,label:'Promedio'},
+        {type:'line',data:Array(series.length).fill(+umbral40hi.toFixed(2)),borderColor:'rgba(232,69,60,0.4)',borderWidth:1.5,borderDash:[3,3],pointRadius:0,label:'+40%'},
+        {type:'line',data:Array(series.length).fill(+umbral40lo.toFixed(2)),borderColor:'rgba(41,128,185,0.4)',borderWidth:1.5,borderDash:[3,3],pointRadius:0,label:'-40%'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:10,family:'Nunito',weight:'700'},color:'#6b6659',boxWidth:12}}},
+      scales:{
+        x:{ticks:{color:'#aaa',font:{size:9},maxRotation:45},grid:{color:'#ece9e1'}},
+        y:{ticks:{color:'#aaa',font:{size:10}},grid:{color:'#ece9e1'}}
+      }
+    }
+  });
+}
+
+// ── HISTORIAL ──
+function renderHist(){
+  const desde=document.getElementById('hDesde').value;
+  const hasta=document.getElementById('hHasta').value;
+  const filtIns=document.getElementById('hInsumo').value;
+  const fechas=getInvFechas();
+  const tbody=document.querySelector('#histTbl tbody');tbody.innerHTML='';
+  const rows=[];
+  fechas.forEach((f,fi)=>{
+    if(desde&&f<desde) return;if(hasta&&f>hasta) return;
+    const pF=fi>0?fechas[fi-1]:null;
+    DB.insumos.forEach(ins=>{
+      if(filtIns&&ins.nombre!==filtIns) return;
+      const invR=DB.inv.find(r=>r.fecha===f&&r.nombre===ins.nombre);if(!invR) return;
+      const ent=DB.entradas.filter(e=>e.fecha===f&&e.nombre===ins.nombre).reduce((s,e)=>s+Number(e.cantidad),0);
+      const sal=DB.salidas.filter(e=>e.fecha===f&&e.nombre===ins.nombre).reduce((s,e)=>s+Number(e.cantidad),0);
+      const cons=pF?calcConsumo(ins.nombre,f,pF):null;
+      const c=DB.costos[ins.nombre];
+      // merma check
+      const series=getConsumoSeries(ins.nombre,60);
+      const valids=series.filter(s=>s.consumo>0).map(s=>s.consumo);
+      const avg=valids.length?valids.reduce((a,b)=>a+b,0)/valids.length:0;
+      const esMerma=cons!==null&&avg>0&&cons>avg*2.2;
+      rows.push({f,n:ins.nombre,u:ins.unidad,v:invR.valor,cons,sal,ent,costoC:cons!==null&&c?cons*c:null,esMerma});
+    });
+  });
+  rows.reverse().forEach(r=>{
+    const cStyle=r.cons!==null&&r.cons<0?'color:var(--red);font-weight:800;':'';
+    tbody.innerHTML+=`<tr>
+      <td>${fmtD(r.f)}</td><td class="tn">${r.n}</td>
+      <td>${fmt(r.v)} ${r.u}</td>
+      <td style="${cStyle}">${r.cons!==null?fmt(r.cons):'-'}</td>
+      <td style="color:var(--orange);font-weight:700;">${r.sal>0?fmt(r.sal)+' '+r.u:'-'}</td>
+      <td style="color:var(--green);font-weight:700;">${r.ent>0?'+'+fmt(r.ent):'-'}</td>
+      <td>${r.costoC?fmtMXN(r.costoC):'-'}</td>
+      <td>${r.esMerma?'<span class="badge b-danger">🔍 Revisar</span>':'<span class="badge b-na">—</span>'}</td>
+    </tr>`;
+  });
+  if(!rows.length) tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3);font-weight:700;">Sin registros</td></tr>';
+}
+
+// ── CONFIG ──
+function removePin(){
+  if(!confirm('¿Quitar el PIN? Cualquiera podrá acceder al área del Dueño.')) return;
+  DB.pin=''; saveDB(); renderCfg(); toast('🔓 PIN eliminado');
+}
+
+function renderCfg(){
+  if(DB.sheetUrl) document.getElementById('sheetUrl').value=DB.sheetUrl;
+
+  // PIN status
+  const pinStatus=document.getElementById('pinStatus');
+  const pinBtn=document.getElementById('pinBtnLabel');
+  const pinRemove=document.getElementById('pinRemoveBtn');
+  if(pinStatus){
+    if(DB.pin){
+      pinStatus.innerHTML='<span style="color:var(--green);">✅ PIN activo — el área del Dueño está protegida</span>';
+      if(pinBtn) pinBtn.textContent='Cambiar PIN';
+      if(pinRemove) pinRemove.style.display='block';
+    } else {
+      pinStatus.innerHTML='<span style="color:var(--text3);">Sin PIN — cualquiera puede acceder al área del Dueño</span>';
+      if(pinBtn) pinBtn.textContent='Crear PIN';
+      if(pinRemove) pinRemove.style.display='none';
+    }
+  }
+  document.getElementById('costosList').innerHTML=DB.insumos.map(ins=>`
+    <div class="cfg-row"><span class="cfg-name">${ins.nombre}</span><span class="cfg-unit">${ins.unidad}</span>
+    <input class="cfg-input" type="number" step="0.01" min="0" data-costo="${ins.nombre}" value="${DB.costos[ins.nombre]||''}" placeholder="$—"></div>`).join('');
+  document.getElementById('minimosList').innerHTML=DB.insumos.map(ins=>`
+    <div class="cfg-row"><span class="cfg-name">${ins.nombre}</span><span class="cfg-unit">${ins.unidad}</span>
+    <input class="cfg-input" type="number" step="0.1" min="0" data-minimo="${ins.nombre}" value="${DB.minimos[ins.nombre]||''}" placeholder="—"></div>`).join('');
+  // Solo fábrica toggles
+  const sfList=document.getElementById('soloFabList');
+  if(sfList) sfList.innerHTML=DB.insumos.map(ins=>{
+    const isSF=(DB.soloFabrica||[]).includes(ins.nombre.toUpperCase().trim());
+    return `<div class="cfg-row">
+      <span class="cfg-name">${ins.nombre}</span>
+      <span class="cfg-unit">${ins.unidad}</span>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+        <input type="checkbox" data-sf="${ins.nombre}" ${isSF?'checked':''} style="width:18px;height:18px;cursor:pointer;">
+        <span style="font-size:11px;font-weight:700;color:var(--text3);">Solo Fábrica</span>
+      </label>
+    </div>`;
+  }).join('');
+  // Edit insumos list
+  const eil=document.getElementById('editInsumosList');
+  if(eil) eil.innerHTML=DB.insumos.map((ins,idx)=>`
+    <div class="cfg-row" style="gap:8px;">
+      <input type="text" value="${ins.nombre}" data-idx="${idx}"
+        style="flex:2;padding:8px 10px;font-family:var(--font);font-size:14px;font-weight:800;background:var(--bg3);border:2px solid var(--border);border-radius:6px;color:var(--text);outline:none;min-width:0;"
+        onchange="editInsumo(${idx},'nombre',this.value)">
+      <select onchange="editInsumo(${idx},'unidad',this.value)"
+        style="width:72px;padding:8px 6px;font-family:var(--font);font-size:13px;font-weight:700;background:var(--bg3);border:2px solid var(--border);border-radius:6px;color:var(--text);outline:none;">
+        ${['KG','LT','PZA','CAJA','LATA','BOLSA'].map(u=>`<option ${ins.unidad===u?'selected':''}>${u}</option>`).join('')}
+      </select>
+      <button onclick="deleteInsumo(${idx})" style="background:none;border:2px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;color:var(--text3);" title="Eliminar">🗑</button>
+    </div>`).join('');
+}
+
+function saveSoloFab(){
+  DB.soloFabrica=[];
+  document.querySelectorAll('[data-sf]').forEach(el=>{
+    if(el.checked) DB.soloFabrica.push(el.dataset.sf.toUpperCase().trim());
+  });
+  saveDB();toast('✅ Guardado');
+}
+
+function editInsumo(idx,field,value){
+  if(!DB.insumos[idx]) return;
+  const oldNombre=DB.insumos[idx].nombre;
+  DB.insumos[idx][field]=field==='nombre'?value.toUpperCase().trim():value;
+  if(field==='nombre'&&oldNombre!==DB.insumos[idx].nombre){
+    const n=DB.insumos[idx].nombre;
+    DB.inv.forEach(r=>{if(r.nombre===oldNombre)r.nombre=n;});
+    DB.entradas.forEach(r=>{if(r.nombre===oldNombre)r.nombre=n;});
+    DB.salidas.forEach(r=>{if(r.nombre===oldNombre)r.nombre=n;});
+    if(DB.costos[oldNombre]){DB.costos[n]=DB.costos[oldNombre];delete DB.costos[oldNombre];}
+    if(DB.minimos[oldNombre]){DB.minimos[n]=DB.minimos[oldNombre];delete DB.minimos[oldNombre];}
+  }
+  if(field==='unidad'){
+    DB.inv.forEach(r=>{if(r.nombre===DB.insumos[idx].nombre)r.unidad=value;});
+    DB.entradas.forEach(r=>{if(r.nombre===DB.insumos[idx].nombre)r.unidad=value;});
+    DB.salidas.forEach(r=>{if(r.nombre===DB.insumos[idx].nombre)r.unidad=value;});
+  }
+  saveDB();toast(`✅ ${DB.insumos[idx].nombre} actualizado`);
+}
+
+function deleteInsumo(idx){
+  const ins=DB.insumos[idx];if(!ins)return;
+  if(!confirm(`¿Eliminar ${ins.nombre} de la lista? El historial no se borra.`))return;
+  DB.insumos.splice(idx,1);saveDB();renderCfg();toast(`🗑 ${ins.nombre} eliminado`);
+}
+function saveCostos(){document.querySelectorAll('[data-costo]').forEach(el=>{if(el.value!=='') DB.costos[el.dataset.costo]=parseFloat(el.value);else delete DB.costos[el.dataset.costo];});saveDB();toast('✅ Costos guardados');}
+function saveMinimos(){document.querySelectorAll('[data-minimo]').forEach(el=>{if(el.value!=='') DB.minimos[el.dataset.minimo]=parseFloat(el.value);else delete DB.minimos[el.dataset.minimo];});saveDB();toast('✅ Mínimos guardados');}
+function addInsumo(){
+  const n=document.getElementById('newNom').value.trim().toUpperCase();
+  const u=document.getElementById('newUnd').value;
+  if(!n){toast('Escribe un nombre');return;}
+  if(DB.insumos.find(i=>i.nombre===n)){toast('Ya existe');return;}
+  DB.insumos.push({nombre:n,unidad:u});saveDB();renderCfg();document.getElementById('newNom').value='';toast(`✅ ${n} agregado`);
+}
+function clearAll(){DB.inv=[];DB.entradas=[];saveDB();toast('Datos eliminados');}
+
+// ── EXPORT ──
+function exportExcel(){
+  const wb=XLSX.utils.book_new();
+  const inv=[['Fecha','Insumo','Unidad','Inventario Final']];
+  [...DB.inv].sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(r=>inv.push([r.fecha,r.nombre,r.unidad,r.valor]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(inv),'Inventarios');
+  const ent=[['Fecha','Insumo','Unidad','Cantidad','Proveedor']];
+  [...DB.entradas].sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(r=>ent.push([r.fecha,r.nombre,r.unidad,r.cantidad,r.proveedor||'']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ent),'Entradas');
+  const sal=[['Fecha','Insumo','Unidad','Cantidad','Destino']];
+  [...DB.salidas].sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(r=>sal.push([r.fecha,r.nombre,r.unidad,r.cantidad,r.destino||'']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sal),'Salidas a Locales');
+  const cons=[['Fecha','Insumo','Unidad','Inv Final','Entradas','Consumo','Costo Consumo','Posible Merma']];
+  fechas.forEach((f,fi)=>{
+    const pf=fi>0?fechas[fi-1]:null;
+    DB.insumos.forEach(ins=>{
+      const r=DB.inv.find(x=>x.fecha===f&&x.nombre===ins.nombre);if(!r) return;
+      const e=DB.entradas.filter(x=>x.fecha===f&&x.nombre===ins.nombre).reduce((s,x)=>s+Number(x.cantidad),0);
+      const c=pf?calcConsumo(ins.nombre,f,pf):'';
+      const costo=DB.costos[ins.nombre];const cc=c!==''&&c!==null&&costo?c*costo:'';
+      const series=getConsumoSeries(ins.nombre,60);
+      const valids=series.filter(s=>s.consumo>0).map(s=>s.consumo);
+      const avg=valids.length?valids.reduce((a,b)=>a+b,0)/valids.length:0;
+      const merma=c!==''&&c!==null&&avg>0&&c>avg*2.2?'SÍ':'';
+      cons.push([f,ins.nombre,ins.unidad,r.valor,e||'',c!==null?c:'',cc,merma]);
+    });
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cons),'Consumo y Merma');
+  XLSX.writeFile(wb,`Lafayette_${today()}.xlsx`);toast('✅ Excel exportado');
+}
+
+function copyScript(){
+  const code=document.getElementById('scriptCode').textContent;
+  navigator.clipboard.writeText(code).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='✅ Copiado';
+    setTimeout(()=>btn.textContent='📋 Copiar',2000);
+  }).catch(()=>{
+    // fallback
+    const el=document.createElement('textarea');
+    el.value=code;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);
+    toast('✅ Código copiado');
+  });
+}
+
+// ── INIT ──
+loadDB();
+</script>
+
+
+</body>
+</html>
