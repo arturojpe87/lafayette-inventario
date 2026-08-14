@@ -288,15 +288,15 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
     </div>
   </div>
   <nav class="app-nav">
-    <button class="nav-tab active" onclick="encNav('areas',this)">🏭 Material a Fábrica</button>
-    <button class="nav-tab" onclick="encNav('capt',this)">📋 Inventario del Día</button>
+    <button class="nav-tab active" onclick="encNav('capt',this)">📋 Inventario del Día</button>
     <button class="nav-tab" onclick="encNav('sal',this)">🚚 Despachar a Local</button>
+    <button class="nav-tab" onclick="encNav('areas',this)">🏭 Material a Fábrica</button>
     <button class="nav-tab" onclick="encNav('ent',this)">📦 Llegó Mercancía</button>
     <button class="nav-tab" onclick="encNav('resumen',this)">📤 Resumen Envío</button>
   </nav>
   <div class="content">
     <!-- MATERIAL A ÁREAS DE FÁBRICA -->
-    <div id="enc-areas">
+    <div id="enc-areas" style="display:none;">
       <div class="sh">
         <div class="sh-title">Material a Fábrica</div>
         <div class="sh-sub">Lo que entregas a cada área en la mañana</div>
@@ -337,7 +337,7 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
     </div>
 
     <!-- CAPTURA -->
-    <div id="enc-capt" style="display:none;">
+    <div id="enc-capt">
       <div class="sh"><div class="sh-title">¿Cuánto quedó hoy?</div><div class="sh-sub">Escribe el total que quedó al cerrar el día</div></div>
       <div class="datebtn" onclick="document.getElementById('captDate').showPicker?.() || document.getElementById('captDate').focus()">
         <span class="db-icon">📅</span>
