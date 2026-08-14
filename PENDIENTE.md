@@ -71,3 +71,56 @@ abierta enfrente.
 Cuando el almacén lleve 2-3 semanas capturando, `v_consumo_promedio` ya tendrá
 con qué responder lo que hoy no sabes: **cuánto se consume de cada insumo por
 día de la semana**. Ahí es donde aparecen las fugas.
+
+---
+
+## Automatización por WhatsApp (diseño, aún no construido)
+
+Corre sobre la **misma infraestructura de Meta** que los reportes de venta:
+un solo chip / un solo número para todo lo interno. Un número puede enviar
+cuantas plantillas distintas se quieran, y tener un solo remitente
+("Lafayette") se lee mejor que tres números sueltos.
+
+Un segundo número solo se justifica cuando cambie el público — mensajes a
+clientes vs. internos — porque la calificación de calidad es por número y
+un cliente molesto arrastraría también los reportes internos.
+
+⚠️ **La API oficial no envía a grupos.** Solo 1:1. Se recorre una lista de
+números. Ventaja: se puede mandar distinto contenido a cada quien — a Jorge
+el detalle, al almacenista solo lo accionable.
+
+### Un mensaje diario, no cinco alertas sueltas
+
+Cinco mensajes separados se ignoran en dos semanas. Uno que llega siempre a
+la misma hora, y que *a veces* trae banderas, se lee siempre. Solo lo
+urgente de verdad se sale del resumen.
+
+```
+📦 ALMACÉN · Jueves 14 Ago
+Inventario final capturado ✓ (28 insumos)
+
+🔴 URGENTE
+  CHOCOLATE — quedan 1.5 jornadas
+
+🟡 REVISAR
+  HARINA: 18kg hoy vs 7kg promedio de jueves
+  LEVADURA: sin movimiento en 21 días
+```
+
+### Alertas, por orden de valor
+
+1. **No se capturó el inventario hoy** — la más importante. Sin ella el
+   sistema se muere en silencio: nadie captura una semana y los promedios
+   quedan con hoyos que ya no se pueden reconstruir.
+2. **Consumo anómalo vs. el promedio de ese día de la semana** — aquí está
+   el dinero. Los faltantes de stock se ven solos; las fugas no se ven nunca.
+   `v_consumo_promedio` ya trae la desviación, así que la comparación es gratis.
+3. **Consumo negativo o imposible** — alguien contó mal o falta registrar una
+   entrada. Avisa el mismo día, cuando todavía se puede reconstruir.
+4. **Insumo estancado** (3+ semanas sin moverse) — capital dormido que caduca,
+   o no se está contando bien.
+5. **Stock por agotarse** — en **jornadas de trabajo**, no días de calendario
+   (`v_cobertura`), y considerando lo que tarda el proveedor. No sirve avisar
+   con 2 jornadas si el proveedor tarda 3 días.
+
+**Bloqueado por:** el chip y la configuración de producción en Meta.
