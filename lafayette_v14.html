@@ -288,14 +288,56 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
     </div>
   </div>
   <nav class="app-nav">
-    <button class="nav-tab active" onclick="encNav('capt',this)">📋 Inventario del Día</button>
+    <button class="nav-tab active" onclick="encNav('areas',this)">🏭 Material a Fábrica</button>
+    <button class="nav-tab" onclick="encNav('capt',this)">📋 Inventario del Día</button>
     <button class="nav-tab" onclick="encNav('sal',this)">🚚 Despachar a Local</button>
     <button class="nav-tab" onclick="encNav('ent',this)">📦 Llegó Mercancía</button>
     <button class="nav-tab" onclick="encNav('resumen',this)">📤 Resumen Envío</button>
   </nav>
   <div class="content">
+    <!-- MATERIAL A ÁREAS DE FÁBRICA -->
+    <div id="enc-areas">
+      <div class="sh">
+        <div class="sh-title">Material a Fábrica</div>
+        <div class="sh-sub">Lo que entregas a cada área en la mañana</div>
+      </div>
+
+      <div class="datebtn" onclick="document.getElementById('areaFecha').showPicker?.()||document.getElementById('areaFecha').focus()">
+        <span class="db-icon">📅</span>
+        <div><div class="db-lbl">Fecha</div><div class="db-val" id="areaFechaDisplay">—</div></div>
+        <input type="date" id="areaFecha" class="db-input" onchange="onAreaFechaChange()">
+      </div>
+
+      <div style="background:#fef3c7;border-radius:var(--rs);padding:12px 14px;margin-bottom:14px;font-size:12px;font-weight:700;color:#92400e;line-height:1.6;">
+        Solo se captura Pan Dulce y Pastelería.
+        <strong>Gourmet no se escribe</strong> — se calcula solo al cerrar el día,
+        con lo que falte entre el inventario y lo que entregaste.
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:420px;">
+          <thead>
+            <tr>
+              <th style="background:var(--accent);color:var(--yellow);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:12px 14px;text-align:left;position:sticky;left:0;z-index:2;min-width:150px;">Materia Prima</th>
+              <th style="background:var(--accent);color:var(--yellow);font-family:var(--font);font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:12px 8px;text-align:center;min-width:40px;">Und</th>
+              <th style="background:#c0392b;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:110px;">Pan Dulce</th>
+              <th style="background:#8e44ad;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:110px;">Pastelería</th>
+            </tr>
+          </thead>
+          <tbody id="areaTbody"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div class="flbl">¿Quién recibió? (opcional)</div>
+        <input type="text" class="fctrl" id="areaRecibio" placeholder="Nombre de quien recogió el material" style="font-size:14px;padding:12px 14px;">
+      </div>
+
+      <button class="bigbtn" onclick="saveAreas()">✓ GUARDAR MATERIAL A FÁBRICA</button>
+    </div>
+
     <!-- CAPTURA -->
-    <div id="enc-capt">
+    <div id="enc-capt" style="display:none;">
       <div class="sh"><div class="sh-title">¿Cuánto quedó hoy?</div><div class="sh-sub">Escribe el total que quedó al cerrar el día</div></div>
       <div class="datebtn" onclick="document.getElementById('captDate').showPicker?.() || document.getElementById('captDate').focus()">
         <span class="db-icon">📅</span>
@@ -1107,23 +1149,29 @@ async function pullInsumos(){
 // y el llamador avisa al usuario — nunca una palomita verde en falso.
 
 async function pushInventario(fecha, rows){
+  const desconocidos = rows.filter(r => !INSUMO_ID[r.nombre]).map(r => r.nombre);
+  if (desconocidos.length) throw new Error('Insumos que no existen en el catálogo: ' + desconocidos.join(', '));
   const payload = rows.map(r => ({
     fecha: fecha,
     insumo_id: INSUMO_ID[r.nombre],
     cantidad: r.valor,
     capturado_por: localStorage.getItem('laf_sb_email') || null
-  })).filter(r => r.insumo_id);
+  }));
   if (!payload.length) return 0;
-  await sbFetch('inv_insumos?on_conflict=fecha,insumo_id', {
+  const guardados = await sbFetch('inv_insumos?on_conflict=fecha,insumo_id', {
     method: 'POST',
     body: payload,
-    headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' }
   });
-  return payload.length;
+  const n = Array.isArray(guardados) ? guardados.length : 0;
+  if (n !== payload.length)
+    throw new Error('La base aceptó ' + n + ' de ' + payload.length + ' registros');
+  return n;
 }
 
 async function pushEntrada(row){
-  await sbFetch('entradas_insumos', {
+  if (!INSUMO_ID[row.nombre]) throw new Error('El insumo ' + row.nombre + ' no existe en el catálogo');
+  const guardados = await sbFetch('entradas_insumos', {
     method: 'POST',
     body: [{
       fecha: row.fecha,
@@ -1132,8 +1180,10 @@ async function pushEntrada(row){
       proveedor: row.proveedor || null,
       capturado_por: localStorage.getItem('laf_sb_email') || null
     }],
-    headers: { 'Prefer': 'return=minimal' }
+    headers: { 'Prefer': 'return=representation' }
   });
+  if (!Array.isArray(guardados) || guardados.length !== 1)
+    throw new Error('La base no confirmó el registro');
 }
 
 // tipo: 'LOCAL' (sale de la fábrica) | 'AREA' (se queda, es consumo de fábrica)
@@ -1144,6 +1194,8 @@ async function pushSalidas(fecha, rows, tipo){
   await sbFetch('salidas_insumos?fecha=eq.' + fecha + '&tipo=eq.' + tipo +
                 '&destino=in.(' + dest.map(d => '"' + d + '"').join(',') + ')',
                 { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } });
+  const desconocidos = rows.filter(r => !INSUMO_ID[r.nombre]).map(r => r.nombre);
+  if (desconocidos.length) throw new Error('Insumos que no existen en el catálogo: ' + desconocidos.join(', '));
   const payload = rows.map(r => ({
     fecha: fecha,
     insumo_id: INSUMO_ID[r.nombre],
@@ -1152,12 +1204,15 @@ async function pushSalidas(fecha, rows, tipo){
     tipo: tipo,
     recibido_por: r.recibido_por || null,
     capturado_por: localStorage.getItem('laf_sb_email') || null
-  })).filter(r => r.insumo_id);
+  }));
   if (!payload.length) return 0;
-  await sbFetch('salidas_insumos', {
-    method: 'POST', body: payload, headers: { 'Prefer': 'return=minimal' }
+  const guardados = await sbFetch('salidas_insumos', {
+    method: 'POST', body: payload, headers: { 'Prefer': 'return=representation' }
   });
-  return payload.length;
+  const n = Array.isArray(guardados) ? guardados.length : 0;
+  if (n !== payload.length)
+    throw new Error('La base aceptó ' + n + ' de ' + payload.length + ' registros');
+  return n;
 }
 
 async function pushCostos(costos){
@@ -1336,12 +1391,13 @@ function capturarResumen(){
 }
 
 function initEnc(){
+  initAreas();
   const f=today();
   document.getElementById('captDate').value=f;
   onCaptDateChange();
   buildCaptCards();
   if(sbToken()) setSyncStatus('enc','ok','Conectado');
-  else setSyncStatus('enc','na','Sin Sheets');
+  else setSyncStatus('enc','ok','Conectado');
 }
 
 function onCaptDateChange(){
@@ -1354,23 +1410,35 @@ function onCaptDateChange(){
   loadExistingCaptura(f);
 }
 
+// Valor capturado el día anterior, para comparar al vuelo.
+function valorAyer(nombre, fecha){
+  const d = new Date(fecha + 'T12:00');
+  d.setDate(d.getDate() - 1);
+  const ayer = d.toISOString().split('T')[0];
+  const r = DB.inv.find(x => x.fecha === ayer && x.nombre === nombre);
+  return r ? r.valor : null;
+}
+
 function buildCaptCards(){
   const f=document.getElementById('captDate').value||today();
   const ex={};DB.inv.filter(r=>r.fecha===f).forEach(r=>{ex[r.nombre]=r.valor;});
   document.getElementById('captCards').innerHTML=DB.insumos.map(ins=>{
     const v=ex[ins.nombre]!==undefined?ex[ins.nombre]:'';
-    return `<div class="ic ${v!==''?'done':''}" id="ic-${ins.nombre.replace(/[\s\/]/g,'_')}">
+    const key=ins.nombre.replace(/[\s\/]/g,'_');
+    const ay=valorAyer(ins.nombre,f);
+    return `<div class="ic ${v!==''?'done':''}" id="ic-${key}">
       <div class="ic-name">${ins.nombre}</div>
-      <div class="ic-unit">${ins.unidad}</div>
+      <div class="ic-unit">${ins.unidad}${ay!==null?` · ayer ${ay}`:''}</div>
       <div class="ic-num">
         <button class="nbtn" onclick="stepIns('${ins.nombre}',-1)">−</button>
-        <input class="ninput" type="number" step="0.5" min="0"
-          id="inp-${ins.nombre.replace(/[\s\/]/g,'_')}"
+        <input class="ninput" type="text" inputmode="decimal"
+          id="inp-${key}"
           value="${v}" placeholder="—"
           oninput="onInsInput(this,'${ins.nombre}')">
         <button class="nbtn" onclick="stepIns('${ins.nombre}',1)">+</button>
       </div>
       <span class="ic-chk">✅</span>
+      <div class="ic-warn" id="warn-${key}" style="display:none;grid-column:1/-1;font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4;"></div>
     </div>`;
   }).join('');
   updateProg();
@@ -1391,18 +1459,41 @@ function loadExistingCaptura(f){
 
 function stepIns(nombre,d){
   const el=document.getElementById('inp-'+nombre.replace(/[\s\/]/g,'_'));
-  const cur=parseFloat(el.value)||0;
+  const cur=parseCantidad(el.value)||0;
   el.value=Math.max(0,+(cur+d).toFixed(1));
   onInsInput(el,nombre);
 }
 function onInsInput(el,nombre){
-  const card=document.getElementById('ic-'+nombre.replace(/[\s\/]/g,'_'));
-  if(el.value!=='') card.classList.add('done'); else card.classList.remove('done');
+  const key=nombre.replace(/[\s\/]/g,'_');
+  const card=document.getElementById('ic-'+key);
+  const warn=document.getElementById('warn-'+key);
+  const v=parseCantidad(el.value);
+
+  if(el.value!=='' && v!==null) card.classList.add('done'); else card.classList.remove('done');
+
+  if(warn){
+    let msg='';
+    if(el.value!=='' && v===null){
+      msg='No entiendo "'+el.value+'". Escribe 2.5 o 2 1/2';
+    } else {
+      const u=avisoUnidad(nombre,v);
+      if(u) msg=u;
+      else {
+        // Salto grande contra ayer: casi siempre es un dedazo, no la realidad.
+        const f=document.getElementById('captDate').value||today();
+        const ay=valorAyer(nombre,f);
+        if(ay!==null && v!==null && ay>0 && (v>ay*3 || (v<ay/3 && v>0)))
+          msg='Ayer había '+ay+'. ¿Seguro?';
+      }
+    }
+    warn.textContent=msg;
+    warn.style.display=msg?'block':'none';
+  }
   updateProg();
 }
 function updateProg(){
   const total=DB.insumos.length;
-  const filled=document.querySelectorAll('.ic.done').length;
+  const filled=document.querySelectorAll('.ic.done').length;  // .done solo si parseCantidad lo entendió
   const pct=total?filled/total*100:0;
   document.getElementById('captProg').style.width=pct+'%';
   document.getElementById('captProgLbl').textContent=`${filled} / ${total}`;
@@ -1480,6 +1571,86 @@ function delEntrada(i){DB.entradas.splice(i,1);saveDB();renderEntListHoy();toast
 // ══════════ SALIDAS — TABLA REPARTO ══════════
 const SAL_SUCURSALES=['Chapultepec','Tuxpan','Sevilla','Tacubaya','Juanacatlán','Medellín'];
 
+// ══════════ MATERIAL A ÁREAS DE FÁBRICA ══════════
+// Gourmet no aparece: lo opera el mismo almacenista, así que declararlo sería
+// juez y parte. Se calcula como residuo en v_consumo_areas.
+const AREAS_FABRICA = ['PAN DULCE','PASTELERÍA'];
+
+function initAreas(){
+  document.getElementById('areaFecha').value = today();
+  onAreaFechaChange();
+}
+
+function onAreaFechaChange(){
+  const f = document.getElementById('areaFecha').value || today();
+  const [y,m,d] = f.split('-');
+  const days   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const dt = new Date(+y, +m-1, +d);
+  document.getElementById('areaFechaDisplay').textContent = days[dt.getDay()]+' '+d+' '+months[+m-1]+' '+y;
+  buildAreaTabla(f);
+}
+
+function buildAreaTabla(fecha){
+  const existing = {};
+  DB.salidas.filter(s => s.fecha === fecha && s.tipo === 'AREA').forEach(s => {
+    if(!existing[s.nombre]) existing[s.nombre] = {};
+    existing[s.nombre][s.destino] = s.cantidad;
+  });
+  const tbody = document.getElementById('areaTbody');
+  if(!tbody) return;
+  tbody.innerHTML = DB.insumos.map(ins => {
+    const key = ins.nombre.replace(/[\s\/áéíóúñ]/g,'_');
+    const cells = AREAS_FABRICA.map(a => {
+      const val = (existing[ins.nombre] || {})[a] || '';
+      return '<td style="padding:6px 8px;border-bottom:1px solid var(--border);">'+
+        '<input class="area-input '+(val?'filled':'')+'" type="text" inputmode="decimal"'+
+        ' id="area_'+key+'_'+a.replace(/[\s]/g,'_')+'"'+
+        ' data-insumo="'+ins.nombre+'" data-area="'+a+'"'+
+        ' value="'+val+'" placeholder="—"'+
+        ' oninput="this.classList.toggle(\'filled\', this.value!==\'\')"'+
+        ' style="width:100%;padding:10px 6px;font-family:var(--font);font-size:16px;font-weight:800;text-align:center;background:var(--bg3);border:2px solid var(--border);border-radius:6px;color:var(--text);outline:none;">'+
+        '</td>';
+    }).join('');
+    return '<tr>'+
+      '<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-family:var(--font);font-size:15px;font-weight:800;position:sticky;left:0;background:var(--bg2);z-index:1;">'+ins.nombre+'</td>'+
+      '<td style="padding:10px 8px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--text3);text-align:center;">'+ins.unidad+'</td>'+
+      cells+'</tr>';
+  }).join('');
+}
+
+async function saveAreas(){
+  const f = document.getElementById('areaFecha').value;
+  if(!f){ toast('Selecciona la fecha'); return; }
+  const recibio = (document.getElementById('areaRecibio').value || '').trim();
+
+  const rows = []; const malos = [];
+  document.querySelectorAll('.area-input').forEach(el => {
+    if(el.value === '') return;
+    const c = parseCantidad(el.value);
+    if(c === null){ malos.push(el.dataset.insumo+' ('+el.dataset.area+'): "'+el.value+'"'); return; }
+    if(c <= 0) return;
+    const ins = DB.insumos.find(i => i.nombre === el.dataset.insumo);
+    rows.push({ fecha:f, nombre:el.dataset.insumo, unidad:ins?.unidad||'',
+                cantidad:c, destino:el.dataset.area, recibido_por:recibio });
+  });
+
+  if(malos.length){ toast('⚠️ No entendí: '+malos.join(', '), 7000); return; }
+  if(!rows.length){ toast('No hay nada que guardar'); return; }
+
+  DB.salidas = DB.salidas.filter(s => !(s.fecha === f && s.tipo === 'AREA'));
+  rows.forEach(r => DB.salidas.push(Object.assign({tipo:'AREA'}, r)));
+  saveDB();
+
+  try{
+    const guardados = await pushSalidas(f, rows, 'AREA');
+    toast('✅ Material a fábrica guardado — '+guardados+' registros');
+  }catch(e){
+    console.error(e);
+    toast('❌ NO se guardó en la nube. Revisa la conexión y vuelve a guardar.', 8000);
+  }
+}
+
 function initSalidas(){
   const f=today();
   document.getElementById('salFecha').value=f;
@@ -1550,8 +1721,8 @@ async function saveSalidas(){
   saveDB();
   if(!rows.length){ toast('No hay nada que repartir'); return; }
   try{
-    await pushSalidas(f, rows, 'LOCAL');
-    toast(`✅ Reparto guardado — ${rows.length} registros`);
+    const guardados = await pushSalidas(f, rows, 'LOCAL');
+    toast(`✅ Reparto guardado — ${guardados} registros`);
   }catch(e){
     console.error(e);
     toast('❌ NO se guardó en la nube. Revisa la conexión y vuelve a guardar.', 8000);
