@@ -1322,14 +1322,18 @@ function updateSheetBanner(){
 }
 
 // ══════════ ENCARGADO ══════════
+// Una sola lista de pantallas: agregar una aquí y ya se oculta/muestra sola.
+// Antes estaban enumeradas a mano y la pantalla nueva nunca se ocultaba.
+const ENC_PAGES = ['areas','capt','sal','ent','resumen'];
 function encNav(name,el){
   document.querySelectorAll('#encApp .nav-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
-  document.getElementById('enc-capt').style.display=name==='capt'?'block':'none';
-  document.getElementById('enc-sal').style.display=name==='sal'?'block':'none';
-  document.getElementById('enc-ent').style.display=name==='ent'?'block':'none';
-  document.getElementById('enc-resumen').style.display=name==='resumen'?'block':'none';
-  if(name==='sal') initSalidas();
-  if(name==='ent') initEntradas();
+  ENC_PAGES.forEach(p=>{
+    const d=document.getElementById('enc-'+p);
+    if(d) d.style.display = (p===name) ? 'block' : 'none';
+  });
+  if(name==='areas')   initAreas();
+  if(name==='sal')     initSalidas();
+  if(name==='ent')     initEntradas();
   if(name==='resumen') renderResumenEnvio();
 }
 
