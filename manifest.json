@@ -2,9 +2,10 @@
   "name": "Lafayette Almacén",
   "short_name": "Almacén",
   "description": "Sistema de inventario Lafayette Repostería",
-  "start_url": "./lafayette_v12.html",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#1c1a15",
+  "background_color": "#f4f1eb",
   "theme_color": "#1c1a15",
   "orientation": "portrait",
   "icons": [
