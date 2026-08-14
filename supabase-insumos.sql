@@ -1,43 +1,41 @@
--- Catálogo de insumos — reconstruido desde la hoja de papel real (Ago 2026)
+-- Catálogo de insumos — tomado de la PWA v13 (INSUMOS_DEF + SOLO_FABRICA)
 -- Correr DESPUÉS de supabase-schema.sql
--- El `orden` respeta el orden de la hoja, para que capturar sea leer de arriba a abajo.
--- `solo_fabrica = true` → no aparece en la tabla de reparto a locales.
+--
+-- Deliberadamente NO están todos los insumos de la hoja de papel: solo los que
+-- concentran el gasto. Medir 27 bien es mejor que 34 a medias — menos captura
+-- diaria, más probable que el hábito se sostenga. Se agregan desde Config si
+-- alguno empieza a pesar.
+--
+-- solo_fabrica = true  →  no aparece en la tabla de reparto a locales.
 
 insert into insumos (nombre, unidad, solo_fabrica, orden) values
-  ('ACEITE',         'LT',     false,  1),
-  ('AZUCAR',         'KG',     false,  2),
-  ('AZUCAR GLASS',   'KG',     true,   3),
-  ('CAFÉ',           'KG',     true,   4),
-  ('CHOCOLATE',      'KG',     false,  5),
-  ('CHANTILLY',      'CUBETA', false,  6),
-  ('HARINA BLANCA',  'KG',     false,  7),
-  ('MIX VAINILLA',   'KG',     false,  8),
-  ('MIX BIZCOCHO',   'KG',     false,  9),
-  ('MIX BROWNIE',    'KG',     true,  10),
-  ('MIX CROISSANT',  'KG',     true,  11),
-  ('MIX 3 LECHES',   'KG',     true,  12),
-  ('MIX CHOCO',      'KG',     true,  13),
-  ('MIX MUERTO',     'KG',     true,  14),
-  ('MIX ROSCA',      'KG',     true,  15),
-  ('MIX DANÉS',      'KG',     false, 16),
-  ('HUEVO',          'CAJA',   false, 17),
-  ('LECHE PROD',     'LT',     true,  18),
-  ('LECHE CAFÉ',     'LT',     true,  19),
-  ('LEVADURA',       'PZA',    false, 20),
-  ('MANTECA',        'KG',     true,  21),
-  ('DANÉS',          'KG',     false, 22),
-  ('UNTARELLA',      'KG',     true,  23),
-  ('NONNA',          'KG',     true,  24),
-  ('FEITÉ',          'KG',     true,  25),
-  ('QUESO',          'KG',     false, 26),
-  ('LECHERA',        'LT',     true,  27),
-  ('VASO 12 OZ',     'PZA',    true,  28),
-  ('TAPAS CAFÉ',     'PZA',    true,  29),
-  ('TOPPING',        'PZA',    true,  30),
-  ('ELOTE',          'KG',     true,  31),
-  ('QUESO CREMA',    'KG',     true,  32),
-  ('MAICENA',        'KG',     true,  33),
-  ('DURAZNO',        'LATA',   true,  34)
+  ('ACEITE',        'LT',   false,  1),
+  ('AZUCAR',        'KG',   false,  2),
+  ('AZUCAR GLASS',  'KG',   false,  3),
+  ('CHOCOLATE',     'KG',   false,  4),
+  ('CHANTILLY',     'KG',   false,  5),
+  ('HARINA BLANCA', 'KG',   false,  6),
+  ('MIX VAINILLA',  'KG',   false,  7),
+  ('MIX BIZCOCHO',  'KG',   false,  8),
+  ('MIX BROWNIE',   'KG',   true,   9),
+  ('MIX CROISSANT', 'KG',   true,  10),
+  ('MIX 3 LECHES',  'KG',   true,  11),
+  ('MIX CHOCO',     'KG',   true,  12),
+  ('MIX RED V',     'KG',   true,  13),
+  ('HUEVO',         'KG',   false, 14),
+  ('LECHE FAB',     'LT',   true,  15),
+  ('LEVADURA',      'PZA',  false, 16),
+  ('MANTECA',       'KG',   false, 17),
+  ('DANÉS',         'KG',   false, 18),
+  ('UNTARELLA',     'KG',   true,  19),
+  ('NONNA',         'KG',   true,  20),
+  ('FEITÉ',         'KG',   false, 21),
+  ('QUESO',         'KG',   false, 22),
+  ('LECHERA',       'LT',   true,  23),
+  ('TOPPING',       'PZA',  true,  24),
+  ('ELOTE',         'KG',   true,  25),
+  ('QUESO CREMA',   'KG',   false, 26),
+  ('DURAZNO',       'LATA', true,  27)
 on conflict (nombre) do update
   set unidad       = excluded.unidad,
       solo_fabrica = excluded.solo_fabrica,
