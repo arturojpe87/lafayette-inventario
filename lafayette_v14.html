@@ -365,15 +365,10 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
       <div style="overflow-x:auto;">
         <table id="salTabla" style="width:100%;border-collapse:collapse;min-width:680px;">
           <thead>
-            <tr>
+            <tr id="salThead">
               <th style="background:var(--accent);color:var(--yellow);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:12px 14px;text-align:left;position:sticky;left:0;z-index:2;min-width:150px;">Materia Prima</th>
               <th style="background:var(--accent);color:var(--yellow);font-family:var(--font);font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:12px 8px;text-align:center;min-width:40px;">Und</th>
-              <th style="background:#2980b9;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:90px;">Chapultepec</th>
-              <th style="background:#8e44ad;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:80px;">Tuxpan</th>
-              <th style="background:#e8453c;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:80px;">Sevilla</th>
-              <th style="background:#27ae60;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:90px;">Tacubaya</th>
-              <th style="background:#e67e22;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:100px;">Juanacatlán</th>
-              <th style="background:#16a085;color:white;font-family:var(--font);font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:90px;">Medellín</th>
+              <!-- Se generan desde sucursal_horarios: una sucursal cerrada no aparece -->
             </tr>
           </thead>
           <tbody id="salTbody"></tbody>
@@ -1400,7 +1395,39 @@ function renderEntListHoy(){
 function delEntrada(i){DB.entradas.splice(i,1);saveDB();renderEntListHoy();toast('Entrada eliminada');}
 
 // ══════════ SALIDAS — TABLA REPARTO ══════════
-const SAL_SUCURSALES=['Chapultepec','Tuxpan','Sevilla','Tacubaya','Juanacatlán','Medellín'];
+// Se llena desde sucursal_horarios al arrancar. Antes estaba escrita a mano,
+// así que el almacenista veía todos los días una columna de Juanacatlán, que
+// lleva meses cerrada. Cuando reabra, aparece sola.
+let SAL_SUCURSALES = ['Chapultepec','Tuxpan','Sevilla','Tacubaya','Medellín'];
+const SUC_COLOR = {'Chapultepec':'#2980b9','Tuxpan':'#8e44ad','Sevilla':'#e8453c',
+                   'Tacubaya':'#27ae60','Juanacatlán':'#e67e22','Medellín':'#16a085'};
+
+async function cargarSucursales(){
+  try{
+    const filas = await sbFetch('sucursal_horarios?select=sucursal,opera&opera=eq.true');
+    const activas = [...new Set(filas.map(f => f.sucursal))];
+    // La fábrica no se surte a sí misma
+    const soloLocales = activas.filter(s => !/Observatorio/i.test(s));
+    if (soloLocales.length) SAL_SUCURSALES = soloLocales;
+  }catch(e){
+    console.warn('No se pudo leer sucursal_horarios, se usa la lista local:', e.message);
+  }
+  pintarEncabezadosReparto();
+}
+
+function pintarEncabezadosReparto(){
+  const tr = document.getElementById('salThead');
+  if(!tr) return;
+  // conservar las dos primeras columnas fijas
+  while(tr.children.length > 2) tr.removeChild(tr.lastChild);
+  SAL_SUCURSALES.forEach(suc => {
+    const th = document.createElement('th');
+    th.style.cssText = 'background:'+(SUC_COLOR[suc]||'#555')+';color:white;font-family:var(--font);' +
+      'font-size:12px;font-weight:800;padding:12px 10px;text-align:center;min-width:90px;';
+    th.textContent = suc;
+    tr.appendChild(th);
+  });
+}
 
 // ══════════ MATERIAL A ÁREAS DE FÁBRICA ══════════
 // Gourmet no aparece: lo opera el mismo almacenista, así que declararlo sería
@@ -2199,6 +2226,7 @@ function cerrarSesion(){
 // Trae catálogo y movimientos, luego muestra la pantalla de siempre.
 async function arrancar(){
   const ok = await pullFromSupabase();
+  await cargarSucursales();
   if(!ok) toast('⚠️ Sin conexión — trabajando con los datos de esta tablet', 6000);
   showMode();
 }
